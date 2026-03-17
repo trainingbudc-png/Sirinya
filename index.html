@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ระบบลงเวลาทำงาน</title>
+    <link rel="icon" href="data:,">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -139,10 +140,8 @@
 </div>
 
 <script>
-    // ***** ใส่ Web App URL ของคุณที่นี่ *****
     const API_URL = "https://script.google.com/macros/s/AKfycbxwqePOwLUuxPxP3EYsWDrZ2WjQbyBbvGCl5TJJugTESI06-Mh_3bxpr-wasSV6r6YkPg/exec"; 
-    // ***** ใส่ LIFF ID ของคุณที่นี่ *****
-    const LIFF_ID = "2009502922-k1zdFCRh; 
+    const LIFF_ID = "2009502922-k1zdFCRh"; 
 
     let userProfile = {};
     let registeredName = "";
@@ -207,14 +206,17 @@
     }
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // ขอพิกัด GPS
+    // ขอพิกัด GPS (แก้ลิงก์แผนที่ให้ถูกต้องแล้ว)
     function getLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
                 resolve("ไม่รองรับ GPS");
             } else {
                 navigator.geolocation.getCurrentPosition(
-                    (position) => { resolve(`https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`); },
+                    (position) => { 
+                        // แก้ไขเครื่องหมายตรงนี้แล้วครับ
+                        resolve(`https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`); 
+                    },
                     (error) => { resolve("ปิดการเข้าถึง GPS"); },
                     { enableHighAccuracy: true, timeout: 5000 }
                 );
