@@ -1,62 +1,102 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>ระบบสแกนใบหน้าเข้างาน</title>
-    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFF Face Scan</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; }
-        video { border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .controls { margin-top: 20px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; color: white; }
-        .btn-in { background-color: #28a745; }
-        .btn-out { background-color: #dc3545; margin-left: 10px; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #fafafa; }
+        #video { width: 100%; max-width: 400px; border-radius: 15px; background: #000; }
+        .hidden { display: none; }
+        .btn { padding: 15px 30px; border: none; border-radius: 10px; color: white; font-size: 18px; margin: 10px; width: 80%; }
+        .btn-reg { background: #007bff; }
+        .btn-in { background: #28a745; }
+        .btn-out { background: #dc3545; }
     </style>
 </head>
 <body>
-    <h2>ระบบสแกนใบหน้าเข้า-ออกงาน</h2>
-    <input type="text" id="userName" placeholder="ระบุชื่อพนักงาน" style="padding:10px; margin-bottom:10px; width:250px;">
-    <video id="video" width="600" height="450" autoplay muted></video>
-    
-    <div class="controls">
-        <button class="btn-in" onclick="recordTime('in')">สแกนเข้างาน</button>
-        <button class="btn-out" onclick="recordTime('out')">สแกนออกงาน</button>
+    <div id="loading">กำลังโหลด...</div>
+
+    <div id="reg-form" class="hidden">
+        <h3>ลงทะเบียนครั้งแรก</h3>
+        <p>คุณยังไม่ได้ลงทะเบียนในระบบ</p>
+        <input type="text" id="regName" placeholder="ชื่อ-นามสกุล" style="padding:10px; width:80%; margin-bottom:10px;"><br>
+        <button class="btn btn-reg" onclick="register()">บันทึกข้อมูล</button>
     </div>
 
-    <p id="status"></p>
+    <div id="main-app" class="hidden">
+        <h3 id="welcomeMsg">สวัสดีคุณ...</h3>
+        <video id="video" autoplay muted playsinline></video>
+        <div>
+            <button class="btn btn-in" onclick="sendData('in')">สแกนเข้างาน</button>
+            <button class="btn btn-out" onclick="sendData('out')">สแกนออกงาน</button>
+        </div>
+    </div>
 
     <script>
-        const video = document.getElementById('video');
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxwqePOwLUuxPxP3EYsWDrZ2WjQbyBbvGCl5TJJugTESI06-Mh_3bxpr-wasSV6r6YkPg/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbxwqePOwLUuxPxP3EYsWDrZ2WjQbyBbvGCl5TJJugTESI06-Mh_3bxpr-wasSV6r6YkPg/exec";
+        let userProfile = {};
+        let registeredName = "";
 
-        // เริ่มเปิดกล้อง
-        navigator.mediaDevices.getUserMedia({ video: {} })
-            .then(stream => { video.srcObject = stream; });
-
-        async function recordTime(type) {
-            const name = document.getElementById('userName').value;
-            const statusText = document.getElementById('status');
-            
-            if(!name) {
-                alert("กรุณากรอกชื่อก่อนสแกน");
-                return;
+        async function initLiff() {
+            await liff.init({ liffId: "2009502922-k1zdFCRh" });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            } else {
+                userProfile = await liff.getProfile();
+                checkRegistration();
             }
-
-            statusText.innerText = "กำลังประมวลผลใบหน้า...";
-            
-            // ส่งข้อมูลไปยัง Google Sheets
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                body: JSON.stringify({ name: name, type: type })
-            }).then(() => {
-                statusText.innerText = `บันทึกเวลา ${type === 'in' ? 'เข้า' : 'ออก'} ของคุณ ${name} สำเร็จ!`;
-                document.getElementById('userName').value = "";
-            }).catch(err => {
-                statusText.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
-            });
         }
+
+        async function checkRegistration() {
+            const resp = await fetch(`${API_URL}?userId=${userProfile.userId}`);
+            const result = await resp.text();
+            
+            document.getElementById('loading').classList.add('hidden');
+            if (result === "not_found") {
+                document.getElementById('reg-form').classList.remove('hidden');
+            } else {
+                registeredName = result;
+                showMainApp();
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById('welcomeMsg').innerText = "สวัสดีคุณ " + registeredName;
+            document.getElementById('reg-form').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            startVideo();
+        }
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => { document.getElementById('video').srcObject = stream; });
+        }
+
+        async function register() {
+            const name = document.getElementById('regName').value;
+            if(!name) return alert("กรุณากรอกชื่อ");
+            
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'register', userId: userProfile.userId, name: name })
+            });
+            alert("ลงทะเบียนสำเร็จ!");
+            location.reload();
+        }
+
+        async function sendData(type) {
+            // ในที่นี้คือการกดปุ่มยืนยันพร้อมใบหน้าหน้ากล้อง
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'attendance', name: registeredName, type: type })
+            });
+            alert(`บันทึกเวลา ${type === 'in' ? 'เข้า' : 'ออก'} สำเร็จ`);
+            liff.closeWindow();
+        }
+
+        initLiff();
     </script>
 </body>
 </html>
