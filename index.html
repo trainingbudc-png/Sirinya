@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ระบบสแกนใบหน้าเข้างาน</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; }
+        video { border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .controls { margin-top: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; color: white; }
+        .btn-in { background-color: #28a745; }
+        .btn-out { background-color: #dc3545; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h2>ระบบสแกนใบหน้าเข้า-ออกงาน</h2>
+    <input type="text" id="userName" placeholder="ระบุชื่อพนักงาน" style="padding:10px; margin-bottom:10px; width:250px;">
+    <video id="video" width="600" height="450" autoplay muted></video>
+    
+    <div class="controls">
+        <button class="btn-in" onclick="recordTime('in')">สแกนเข้างาน</button>
+        <button class="btn-out" onclick="recordTime('out')">สแกนออกงาน</button>
+    </div>
+
+    <p id="status"></p>
+
+    <script>
+        const video = document.getElementById('video');
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxwqePOwLUuxPxP3EYsWDrZ2WjQbyBbvGCl5TJJugTESI06-Mh_3bxpr-wasSV6r6YkPg/exec"; 
+
+        // เริ่มเปิดกล้อง
+        navigator.mediaDevices.getUserMedia({ video: {} })
+            .then(stream => { video.srcObject = stream; });
+
+        async function recordTime(type) {
+            const name = document.getElementById('userName').value;
+            const statusText = document.getElementById('status');
+            
+            if(!name) {
+                alert("กรุณากรอกชื่อก่อนสแกน");
+                return;
+            }
+
+            statusText.innerText = "กำลังประมวลผลใบหน้า...";
+            
+            // ส่งข้อมูลไปยัง Google Sheets
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                body: JSON.stringify({ name: name, type: type })
+            }).then(() => {
+                statusText.innerText = `บันทึกเวลา ${type === 'in' ? 'เข้า' : 'ออก'} ของคุณ ${name} สำเร็จ!`;
+                document.getElementById('userName').value = "";
+            }).catch(err => {
+                statusText.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
+            });
+        }
+    </script>
+</body>
+</html>
