@@ -244,7 +244,7 @@
 
             showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
             await sleep(1500);
-            liff.closeWindow(); // ปิดหน้าต่าง LINE ทันทีเมื่อเสร็จ
+            hideLoader(); // เปลี่ยนเป็นซ่อนแถบโหลดแทน เพื่อให้อยู่หน้าเดิม
         } catch (err) {
             showLoader("เกิดข้อผิดพลาดในการบันทึก!", 100, "❌");
             document.getElementById('progress-bar').style.background = "red";
