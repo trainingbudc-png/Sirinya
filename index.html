@@ -87,6 +87,7 @@
     </style>
 </head>
 <body>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <div class="app-container">
     
@@ -224,27 +225,43 @@
         });
     }
 
-    // สแกนใบหน้าและบันทึก
+ // สแกนใบหน้า ถ่ายรูป และบันทึก
     async function processAttendance(type) {
         let typeText = type === 'in' ? 'เข้างาน' : 'ออกงาน';
+        document.getElementById('progress-bar').style.background = "#00B900"; 
         
-        showLoader("กำลังประมวลผลใบหน้า...", 20, "📸");
-        await sleep(1000); // จำลองเวลาประมวลผลกล้อง
+        showLoader("กำลังถ่ายภาพ...", 20, "📸");
 
-        showLoader("กำลังดึงพิกัดตำแหน่ง (GPS)...", 50, "📍");
+        // --- ส่วนที่เพิ่มเข้ามา: แคปรูปจากวิดีโอ ---
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // แปลงภาพเป็น Base64
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+        // --------------------------------------
+
+        await sleep(500); 
+
+        showLoader("กำลังดึงพิกัดตำแหน่ง (GPS)...", 40, "📍");
         const locationStr = await getLocation();
 
-        showLoader("กำลังบันทึกข้อมูลลงระบบ...", 80, "☁️");
+        showLoader("กำลังอัปโหลดรูปภาพและบันทึก...", 70, "☁️");
 
         try {
             await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: locationStr })
+                // *** เพิ่มตัวแปร image ส่งไปด้วย ***
+                body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: locationStr, image: imageDataUrl })
             });
 
             showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
             await sleep(1500);
-            hideLoader(); // เปลี่ยนเป็นซ่อนแถบโหลดแทน เพื่อให้อยู่หน้าเดิม
+            hideLoader(); 
+
         } catch (err) {
             showLoader("เกิดข้อผิดพลาดในการบันทึก!", 100, "❌");
             document.getElementById('progress-bar').style.background = "red";
