@@ -141,7 +141,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwQJloOuaXh_DpNqWQ-YTO13v_qkDR2URmYuDpbx0Gvuu2Zwj-K73o19nclk6RDtMRDsw/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
 
     let userProfile = {};
@@ -207,7 +207,7 @@
     }
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // ขอพิกัด GPS (แก้ไขลิงก์ให้ถูกต้อง)
+    // ขอพิกัด GPS (แก้ไข URL ตรงนี้แล้ว)
     function getLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
@@ -215,8 +215,7 @@
             } else {
                 navigator.geolocation.getCurrentPosition(
                     (position) => { 
-                        // แก้ไข URL ให้เป็น Google Maps ที่กดได้จริง
-                        resolve(`https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`); 
+                        resolve(`https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`); 
                     },
                     (error) => { resolve("ปิดการเข้าถึง GPS"); },
                     { enableHighAccuracy: true, timeout: 5000 }
@@ -232,7 +231,6 @@
         
         showLoader("กำลังถ่ายภาพ...", 20, "📸");
 
-        // --- ส่วนที่เพิ่มเข้ามา: แคปรูปจากวิดีโอ ---
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         canvas.width = video.videoWidth;
@@ -240,9 +238,7 @@
         const context = canvas.getContext('2d');
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // แปลงภาพเป็น Base64
         const imageDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
-        // --------------------------------------
 
         await sleep(500); 
 
@@ -252,7 +248,7 @@
         showLoader("กำลังอัปโหลดรูปภาพและบันทึก...", 70, "☁️");
 
         try {
-            await fetch(API_URL, {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 redirect: 'follow',
                 headers: {
@@ -261,11 +257,20 @@
                 body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: locationStr, image: imageDataUrl })
             });
 
+            if (!response.ok) throw new Error("Server Request Failed");
+
             showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
             await sleep(1500);
-            hideLoader(); 
+            
+            // ปิดหน้าต่าง LIFF ทันทีเมื่อเสร็จ
+            if(liff.isInClient()) {
+                liff.closeWindow();
+            } else {
+                hideLoader(); 
+            }
 
         } catch (err) {
+            console.error(err);
             showLoader("เกิดข้อผิดพลาดในการบันทึก!", 100, "❌");
             document.getElementById('progress-bar').style.background = "red";
             await sleep(2000);
@@ -273,7 +278,7 @@
         }
     }
 
-    // ลงทะเบียน (เพิ่ม CORS fix)
+    // ลงทะเบียน 
     async function register() {
         const name = document.getElementById('regName').value;
         if(!name) return alert("กรุณากรอกชื่อ-นามสกุล");
@@ -297,7 +302,7 @@
         }
     }
 
-    // ดึงประวัติ (เพิ่ม CORS fix)
+    // ดึงประวัติ
     async function fetchHistory() {
         showLoader("กำลังดึงข้อมูลประวัติ...", 60, "📅");
         try {
