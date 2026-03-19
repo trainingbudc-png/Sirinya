@@ -25,12 +25,10 @@
         .header h2 { margin: 0; font-weight: 500; font-size: 22px; }
         .content { padding: 20px; text-align: center; }
         
-        /* ส่วนของนาฬิกา */
         .time-box { margin-bottom: 20px; }
         .clock { font-size: 40px; font-weight: 700; color: #00B900; line-height: 1; margin-bottom: 5px; }
         .date { font-size: 16px; color: #666; }
 
-        /* วิดีโอสแกน */
         .video-container { 
             width: 100%; height: 300px; 
             background: #000; border-radius: 15px; 
@@ -39,7 +37,6 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* ปุ่มกด */
         .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .btn { 
             flex: 1; padding: 15px; border: none; border-radius: 10px; 
@@ -58,7 +55,6 @@
             box-sizing: border-box; text-align: center;
         }
 
-        /* หน้าต่าง Loader */
         .loader-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.95); display: flex; flex-direction: column;
@@ -70,7 +66,6 @@
         .spinner { font-size: 50px; animation: bounce 1s infinite alternate; }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-20px); } }
 
-        /* หน้าต่างประวัติ */
         .history-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; z-index: 500; display: none; overflow-y: auto;
@@ -141,13 +136,21 @@
 </div>
 
 <script>
+    // ========================================================
+    // ⚙️ ตั้งค่าระบบ
+    // ========================================================
     const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
+
+    // 📍 ตั้งค่าพิกัดสถานที่ทำงาน (ให้เอาพิกัดบริษัทคุณมาใส่ที่นี่)
+    const OFFICE_LAT = 13.7563;  // แก้ตรงนี้: ละติจูดของที่ทำงาน (ตัวอย่างคือ กทม.)
+    const OFFICE_LNG = 100.5018; // แก้ตรงนี้: ลองจิจูดของที่ทำงาน
+    const ALLOWED_RADIUS = 100;  // รัศมีที่อนุญาตให้สแกนได้ (หน่วยเป็น: เมตร)
+    // ========================================================
 
     let userProfile = {};
     let registeredName = "";
 
-    // อัปเดตนาฬิกา
     function updateClock() {
         const now = new Date();
         document.getElementById('clock').innerText = now.toLocaleTimeString('th-TH', { hour12: false });
@@ -157,7 +160,6 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // เริ่มการทำงานของ LIFF
     async function initLiff() {
         await liff.init({ liffId: LIFF_ID });
         if (!liff.isLoggedIn()) {
@@ -195,7 +197,6 @@
             .catch(err => alert("กรุณาอนุญาตการเข้าถึงกล้องถ่ายรูป"));
     }
 
-    // ฟังก์ชันจัดการ UI แถบโหลด
     function showLoader(text, percent, icon="⏳") {
         document.getElementById('loader').style.display = 'flex';
         document.querySelector('.spinner').innerText = icon;
@@ -207,18 +208,38 @@
     }
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // ขอพิกัด GPS (แก้ไขลิงก์ให้ถูกต้อง)
-    function getLocation() {
+    // สูตรคำนวณระยะทางจากพิกัด (Haversine formula)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; // รัศมีโลก (เมตร)
+        const rad1 = lat1 * Math.PI / 180;
+        const rad2 = lat2 * Math.PI / 180;
+        const deltaLat = (lat2 - lat1) * Math.PI / 180;
+        const deltaLon = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                  Math.cos(rad1) * Math.cos(rad2) *
+                  Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // คืนค่าเป็นระยะห่าง (เมตร)
+    }
+
+    // ฟังก์ชันดึงพิกัดและตรวจสอบแบบใหม่
+    function checkLocationData() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
-                resolve("ไม่รองรับ GPS");
+                resolve({ error: "มือถือของคุณไม่รองรับระบบ GPS" });
             } else {
                 navigator.geolocation.getCurrentPosition(
                     (position) => { 
-                        resolve(`https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`); 
+                        resolve({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            mapLink: `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`,
+                            error: null
+                        }); 
                     },
-                    (error) => { resolve("ปิดการเข้าถึง GPS"); },
-                    { enableHighAccuracy: true, timeout: 5000 }
+                    (error) => { resolve({ error: "กรุณาเปิด GPS ตำแหน่งที่ตั้งในมือถือก่อนสแกน" }); },
+                    { enableHighAccuracy: true, timeout: 10000 }
                 );
             }
         });
@@ -229,7 +250,28 @@
         let typeText = type === 'in' ? 'เข้างาน' : 'ออกงาน';
         document.getElementById('progress-bar').style.background = "#00B900"; 
         
-        showLoader("กำลังถ่ายภาพ...", 20, "📸");
+        showLoader("กำลังตรวจสอบพิกัด...", 20, "📍");
+
+        // ตรวจสอบ GPS และจำกัดพื้นที่ -------------------
+        const locData = await checkLocationData();
+        if (locData.error) {
+            showLoader(locData.error, 100, "❌");
+            document.getElementById('progress-bar').style.background = "red";
+            await sleep(3000); hideLoader();
+            return; // หยุดการทำงานทันทีถ้าไม่เปิด GPS
+        }
+
+        // คำนวณระยะห่าง
+        const distance = calculateDistance(locData.lat, locData.lng, OFFICE_LAT, OFFICE_LNG);
+        if (distance > ALLOWED_RADIUS) {
+            showLoader(`คุณอยู่นอกพื้นที่! (ห่าง ${Math.round(distance)} เมตร)`, 100, "🛑");
+            document.getElementById('progress-bar').style.background = "red";
+            await sleep(4000); hideLoader();
+            return; // หยุดการทำงานทันทีถ้าอยู่นอกเขต
+        }
+        // ------------------------------------------
+
+        showLoader("กำลังถ่ายภาพ...", 40, "📸");
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -240,12 +282,7 @@
         
         const imageDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
 
-        await sleep(500); 
-
-        showLoader("กำลังดึงพิกัดตำแหน่ง (GPS)...", 40, "📍");
-        const locationStr = await getLocation();
-
-        showLoader("กำลังอัปโหลดรูปภาพและบันทึก...", 70, "☁️");
+        showLoader("กำลังบันทึกข้อมูล...", 70, "☁️");
 
         try {
             const response = await fetch(API_URL, {
@@ -258,7 +295,7 @@
                     action: 'attendance', 
                     name: registeredName, 
                     type: type,
-                    location: locationStr,    
+                    location: locData.mapLink,    
                     image: imageDataUrl       
                 })
             });
@@ -267,12 +304,8 @@
 
             if (resultText === "Success") {
                 showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
-                
-                // --- ส่วนที่แก้ไขให้เด้งกลับหน้าสแกน ---
-                await sleep(2500); // รอ 2.5 วินาทีให้เห็นข้อความสำเร็จ
-                window.location.reload(); // รีเฟรชหน้าเว็บกลับไปเริ่มต้นใหม่
-                // ---------------------------------
-
+                await sleep(2500); 
+                window.location.reload(); 
             } else {
                 throw new Error(resultText); 
             }
@@ -286,7 +319,6 @@
         }
     }
 
-    // ลงทะเบียน 
     async function register() {
         const name = document.getElementById('regName').value;
         if(!name) return alert("กรุณากรอกชื่อ-นามสกุล");
@@ -296,9 +328,7 @@
             await fetch(API_URL, {
                 method: 'POST',
                 redirect: 'follow',
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: 'register', userId: userProfile.userId, name: name })
             });
             showLoader("ลงทะเบียนสำเร็จ!", 100, "🎉");
@@ -310,16 +340,13 @@
         }
     }
 
-    // ดึงประวัติ
     async function fetchHistory() {
         showLoader("กำลังดึงข้อมูลประวัติ...", 60, "📅");
         try {
             const resp = await fetch(API_URL, {
                 method: 'POST',
                 redirect: 'follow',
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: 'history', name: registeredName })
             });
             const data = await resp.json();
@@ -349,7 +376,6 @@
         }
     }
 
-    // เริ่มทำงาน
     initLiff();
 
 </script>
