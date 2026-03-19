@@ -207,7 +207,7 @@
     }
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // ขอพิกัด GPS (แก้ลิงก์แผนที่ให้ถูกต้องแล้ว)
+    // ขอพิกัด GPS (แก้ไขลิงก์ให้ถูกต้อง)
     function getLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
@@ -215,8 +215,8 @@
             } else {
                 navigator.geolocation.getCurrentPosition(
                     (position) => { 
-                        // แก้ไขเครื่องหมายตรงนี้แล้วครับ
-                        resolve(`https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`); 
+                        // แก้ไข URL ให้เป็น Google Maps ที่กดได้จริง
+                        resolve(`https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`); 
                     },
                     (error) => { resolve("ปิดการเข้าถึง GPS"); },
                     { enableHighAccuracy: true, timeout: 5000 }
@@ -254,7 +254,10 @@
         try {
             await fetch(API_URL, {
                 method: 'POST',
-                // *** เพิ่มตัวแปร image ส่งไปด้วย ***
+                redirect: 'follow',
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
                 body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: locationStr, image: imageDataUrl })
             });
 
@@ -270,7 +273,7 @@
         }
     }
 
-    // ลงทะเบียน
+    // ลงทะเบียน (เพิ่ม CORS fix)
     async function register() {
         const name = document.getElementById('regName').value;
         if(!name) return alert("กรุณากรอกชื่อ-นามสกุล");
@@ -279,6 +282,10 @@
         try {
             await fetch(API_URL, {
                 method: 'POST',
+                redirect: 'follow',
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
                 body: JSON.stringify({ action: 'register', userId: userProfile.userId, name: name })
             });
             showLoader("ลงทะเบียนสำเร็จ!", 100, "🎉");
@@ -290,12 +297,16 @@
         }
     }
 
-    // ดึงประวัติ
+    // ดึงประวัติ (เพิ่ม CORS fix)
     async function fetchHistory() {
         showLoader("กำลังดึงข้อมูลประวัติ...", 60, "📅");
         try {
             const resp = await fetch(API_URL, {
                 method: 'POST',
+                redirect: 'follow',
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
                 body: JSON.stringify({ action: 'history', name: registeredName })
             });
             const data = await resp.json();
