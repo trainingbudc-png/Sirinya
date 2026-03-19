@@ -141,7 +141,6 @@
 </div>
 
 <script>
-    // ⚠️ ถ้าคุณ Deploy หลังบ้านเป็นเวอร์ชันใหม่แล้วได้ URL เปลี่ยนไป อย่าลืมเอามาอัปเดตบรรทัดนี้นะครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
 
@@ -208,7 +207,7 @@
     }
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // ขอพิกัด GPS (✅ แก้ไข Syntax Error เรื่องการใส่ตัวแปร $ และปรับเป็นลิงก์มาตรฐานแล้ว)
+    // ขอพิกัด GPS (แก้ไขลิงก์ให้ถูกต้อง)
     function getLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
@@ -268,8 +267,12 @@
 
             if (resultText === "Success") {
                 showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
-                await sleep(1500);
-                liff.closeWindow(); 
+                
+                // --- ส่วนที่แก้ไขให้เด้งกลับหน้าสแกน ---
+                await sleep(2500); // รอ 2.5 วินาทีให้เห็นข้อความสำเร็จ
+                window.location.reload(); // รีเฟรชหน้าเว็บกลับไปเริ่มต้นใหม่
+                // ---------------------------------
+
             } else {
                 throw new Error(resultText); 
             }
