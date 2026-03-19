@@ -141,6 +141,7 @@
 </div>
 
 <script>
+    // ⚠️ ถ้าคุณ Deploy หลังบ้านเป็นเวอร์ชันใหม่แล้วได้ URL เปลี่ยนไป อย่าลืมเอามาอัปเดตบรรทัดนี้นะครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
 
@@ -207,7 +208,7 @@
     }
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // ขอพิกัด GPS (แก้ไข URL ตรงนี้แล้ว)
+    // ขอพิกัด GPS (✅ แก้ไข Syntax Error เรื่องการใส่ตัวแปร $ และปรับเป็นลิงก์มาตรฐานแล้ว)
     function getLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
@@ -224,7 +225,7 @@
         });
     }
 
- // สแกนใบหน้า ถ่ายรูป และบันทึก
+    // สแกนใบหน้า ถ่ายรูป และบันทึก
     async function processAttendance(type) {
         let typeText = type === 'in' ? 'เข้างาน' : 'ออกงาน';
         document.getElementById('progress-bar').style.background = "#00B900"; 
@@ -247,41 +248,39 @@
 
         showLoader("กำลังอัปโหลดรูปภาพและบันทึก...", 70, "☁️");
 
-       try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            redirect: 'follow',
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: JSON.stringify({ 
-                action: 'attendance', 
-                name: registeredName, 
-                type: type,
-                location: locationStr,    // <-- ส่งพิกัดไปหลังบ้าน
-                image: imageDataUrl       // <-- ส่งรูปภาพไปหลังบ้าน (ใช้ชื่อตัวแปรตามที่คุณประกาศไว้)
-            })
-        });
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                redirect: 'follow',
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify({ 
+                    action: 'attendance', 
+                    name: registeredName, 
+                    type: type,
+                    location: locationStr,    
+                    image: imageDataUrl       
+                })
+            });
 
-        // บังคับให้อ่านคำตอบจากหลังบ้าน
-        const resultText = await response.text(); 
+            const resultText = await response.text(); 
 
-        if (resultText === "Success") {
-            showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
-            await sleep(1500);
-            liff.closeWindow(); 
-        } else {
-            // ถ้าหลังบ้าน Error ให้โยนไปเข้า catch
-            throw new Error(resultText); 
+            if (resultText === "Success") {
+                showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
+                await sleep(1500);
+                liff.closeWindow(); 
+            } else {
+                throw new Error(resultText); 
+            }
+
+        } catch (err) {
+            console.error(err);
+            showLoader("ระบบขัดข้อง: " + err.message, 100, "❌");
+            document.getElementById('progress-bar').style.background = "red";
+            await sleep(4000); 
+            hideLoader();
         }
-
-    } catch (err) {
-        console.error(err);
-        showLoader("ระบบขัดข้อง: " + err.message, 100, "❌");
-        document.getElementById('progress-bar').style.background = "red";
-        await sleep(4000); 
-        hideLoader();
-    }
     }
 
     // ลงทะเบียน 
