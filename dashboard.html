@@ -13,7 +13,7 @@
         .filter-box { display: flex; flex-wrap: wrap; gap: 15px; background: #e9ecef; padding: 15px; border-radius: 10px; margin-bottom: 20px; align-items: center; }
         .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
         label { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
-        input[type="date"], input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Sarabun', sans-serif; }
+        input[type="date"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Sarabun', sans-serif; width: 100%; box-sizing: border-box; }
         button.btn-search { background: #00B900; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
         button.btn-search:hover { background: #009900; }
         button.btn-clear { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
@@ -52,8 +52,10 @@
             <input type="date" id="endDate">
         </div>
         <div class="filter-item">
-            <label>ค้นหาชื่อพนักงาน:</label>
-            <input type="text" id="nameFilter" placeholder="พิมพ์ชื่อ... (เว้นว่างเพื่อดูทุกคน)">
+            <label>เลือกพนักงาน:</label>
+            <select id="nameFilter">
+                <option value="">-- ทุกคน --</option>
+            </select>
         </div>
         <button class="btn-search" onclick="applyFilters()">🔍 ค้นหา</button>
         <button class="btn-clear" onclick="clearFilters()">🔄 ล้างค่า</button>
@@ -104,6 +106,10 @@
                 body: JSON.stringify({ action: 'getAllData' })
             });
             allData = await resp.json();
+            
+            // สร้าง Dropdown รายชื่อพนักงานอัตโนมัติ
+            populateNameDropdown(allData);
+            
             renderTable(allData);
         } catch(e) {
             console.error(e);
@@ -113,6 +119,30 @@
         }
     };
 
+    // ฟังก์ชันสำหรับดึงชื่อที่ไม่ซ้ำกันมาใส่ใน Dropdown
+    function populateNameDropdown(dataArray) {
+        const nameSelect = document.getElementById('nameFilter');
+        
+        // กรองเอาเฉพาะชื่อที่ไม่ซ้ำกัน
+        const uniqueNames = [...new Set(dataArray.map(item => item.name))];
+        
+        // เรียงลำดับตัวอักษร ก-ฮ
+        uniqueNames.sort();
+
+        // รีเซ็ตตัวเลือกให้เหลือแค่ "-- ทุกคน --"
+        nameSelect.innerHTML = '<option value="">-- ทุกคน --</option>';
+
+        // วนลูปสร้างตัวเลือก (Option)
+        uniqueNames.forEach(name => {
+            if (name && name !== "-") {
+                let option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                nameSelect.appendChild(option);
+            }
+        });
+    }
+
     function clearFilters() {
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
@@ -120,17 +150,13 @@
         renderTable(allData);
     }
 
-    // แก้ไขฟังก์ชันนี้ให้ฉลาดขึ้น รองรับทั้ง พ.ศ. และ ค.ศ.
     function parseDateTH(dateStr) {
         if (!dateStr || dateStr === "-") return null;
-        
-        // แปลงเครื่องหมาย - ให้เป็น / และเผื่อกรณีมีเวลาติดมาด้วยให้ตัดทิ้ง
         let cleanDate = dateStr.replace(/-/g, '/').split(' ')[0]; 
         let parts = cleanDate.split('/');
         
         if (parts.length === 3) {
             let year = parseInt(parts[2]);
-            // ถ้าเป็น พ.ศ. ให้ลบ 543 เพื่อให้ตรงกับปฏิทินของเบราว์เซอร์
             if (year > 2500) year -= 543; 
             return new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
         }
@@ -140,13 +166,13 @@
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const nameSearch = document.getElementById('nameFilter').value.trim().toLowerCase();
+        const nameSearch = document.getElementById('nameFilter').value; // เอาค่าจาก Dropdown
 
         let filteredData = allData;
 
-        // กรองตามชื่อ
+        // กรองตามชื่อ (ตรงเป๊ะๆ ตามที่เลือก)
         if (nameSearch !== "") {
-            filteredData = filteredData.filter(item => item.name.toLowerCase().includes(nameSearch));
+            filteredData = filteredData.filter(item => item.name === nameSearch);
         }
 
         // กรองตามวันที่
