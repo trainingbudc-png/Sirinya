@@ -120,11 +120,20 @@
         renderTable(allData);
     }
 
-    // ฟังก์ชันแปลงวันที่แบบไทย (DD/MM/YYYY) เป็นระบบให้ค้นหาได้
+    // แก้ไขฟังก์ชันนี้ให้ฉลาดขึ้น รองรับทั้ง พ.ศ. และ ค.ศ.
     function parseDateTH(dateStr) {
         if (!dateStr || dateStr === "-") return null;
-        let parts = dateStr.split('/');
-        if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+        
+        // แปลงเครื่องหมาย - ให้เป็น / และเผื่อกรณีมีเวลาติดมาด้วยให้ตัดทิ้ง
+        let cleanDate = dateStr.replace(/-/g, '/').split(' ')[0]; 
+        let parts = cleanDate.split('/');
+        
+        if (parts.length === 3) {
+            let year = parseInt(parts[2]);
+            // ถ้าเป็น พ.ศ. ให้ลบ 543 เพื่อให้ตรงกับปฏิทินของเบราว์เซอร์
+            if (year > 2500) year -= 543; 
+            return new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
         return null;
     }
 
@@ -135,10 +144,12 @@
 
         let filteredData = allData;
 
+        // กรองตามชื่อ
         if (nameSearch !== "") {
             filteredData = filteredData.filter(item => item.name.toLowerCase().includes(nameSearch));
         }
 
+        // กรองตามวันที่
         if (startDate || endDate) {
             filteredData = filteredData.filter(item => {
                 const rowDate = parseDateTH(item.rawDate);
@@ -193,7 +204,7 @@
             }
 
             let btnHtml = `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
-            if (!item.image && !item.location) {
+            if (!item.image && (!item.location || item.location === "ไม่ระบุ")) {
                 btnHtml = `<span style="color:#aaa;">ไม่มีข้อมูล</span>`;
             }
 
