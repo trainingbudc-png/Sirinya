@@ -96,7 +96,7 @@
 
 <script>
     // ⚠️ อย่าลืมแก้ตรงนี้เป็นลิงก์ API อันใหม่ล่าสุดของคุณนะครับ!
-    const API_URL = "https://script.google.com/macros/s/AKfycbw7E2sLBqrjIcNiWM4OtywgZmGUn8dkpq94IUbPQ7azVh2YnIdtMjy_qatoEk-U8PPDfQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec";
     
     let allLogs = [];
     const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -255,28 +255,53 @@
         });
     }
 
+   // 1. เพิ่มฟังก์ชันแปลงลิงก์ Google Drive ให้เป็นรูประบบ Thumbnail ที่แสดงผลได้ 100%
+    function getDirectImageUrl(url) {
+        if (!url || url === "undefined") return "";
+        let fileId = "";
+        
+        // ถ้าเป็นลิงก์แบบเก่า (file/d/ID/view)
+        if (url.includes("/file/d/")) {
+            fileId = url.split("/file/d/")[1].split("/")[0];
+        } 
+        // ถ้าเป็นลิงก์แบบใหม่ (uc?id=ID หรือ thumbnail?id=ID)
+        else if (url.includes("id=")) {
+            fileId = url.split("id=")[1].split("&")[0];
+        }
+
+        if (fileId) {
+            // ใช้ลิงก์ Thumbnail ของ Google ที่รับประกันว่ารูปขึ้นแน่นอน
+            return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w800";
+        }
+        return url; // ถ้าไม่ใช่ลิงก์ Drive ให้ส่งกลับเป็นลิงก์เดิม
+    }
+
+    // 2. อัปเดตฟังก์ชันเปิดหน้าต่างข้อมูล (Modal)
     function openModal(imgUrl, mapUrl) {
         const imgElement = document.getElementById('modalImg');
         const noImageText = document.getElementById('noImageText');
         
-        if (imgUrl && imgUrl !== "undefined" && imgUrl !== "") {
-            imgElement.src = imgUrl;
+        // นำลิงก์ที่ได้จาก Sheet มาแปลงก่อนแสดงผล
+        const directImgUrl = getDirectImageUrl(imgUrl);
+        
+        if (directImgUrl && directImgUrl !== "") {
+            imgElement.src = directImgUrl;
             imgElement.style.display = "block";
-            noImageText.style.display = "none";
+            // ถ้าคุณไม่มีแท็ก noImageText ใน HTML เดิม ให้ข้ามหรือลบบรรทัดล่างนี้ได้เลยครับ
+            if(noImageText) noImageText.style.display = "none"; 
         } else {
             imgElement.src = "";
             imgElement.style.display = "none";
-            noImageText.style.display = "block";
+            if(noImageText) noImageText.style.display = "block";
         }
 
-        document.getElementById('modalMap').href = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? mapUrl : "#";
-        document.getElementById('modalMap').style.display = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? "inline-block" : "none";
+        // จัดการส่วนของแผนที่
+        const mapElement = document.getElementById('modalMap');
+        mapElement.href = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? mapUrl : "#";
+        mapElement.style.display = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? "inline-block" : "none";
         
         document.getElementById('infoModal').style.display = "flex";
-    }
-
-    function closeModal() {
-        document.getElementById('infoModal').style.display = "none";
+    
     }
 </script>
 
