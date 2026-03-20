@@ -14,9 +14,10 @@
         .filter-box { display: flex; flex-wrap: wrap; gap: 15px; background: #e9ecef; padding: 15px; border-radius: 10px; margin-bottom: 20px; align-items: center; }
         .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
         label { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
-        input[type="date"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Sarabun', sans-serif; }
+        input[type="date"], input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Sarabun', sans-serif; }
         button.btn-search { background: #00B900; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
         button.btn-search:hover { background: #009900; }
+        button.btn-clear { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
 
         /* Table Section */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
@@ -25,7 +26,7 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
         
-        .late { color: red; font-weight: bold; } /* สีแดงสำหรับคนมาสาย */
+        .late { color: red; font-weight: bold; } 
         .btn-view { background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
         .btn-view:hover { background: #138496; }
 
@@ -54,12 +55,11 @@
             <input type="date" id="endDate">
         </div>
         <div class="filter-item">
-            <label>เลือกพนักงาน:</label>
-            <select id="nameFilter">
-                <option value="all">-- ทุกคน --</option>
-            </select>
+            <label>ค้นหาชื่อพนักงาน:</label>
+            <input type="text" id="nameFilter" placeholder="พิมพ์ชื่อ... (เว้นว่างเพื่อดูทุกคน)">
         </div>
         <button class="btn-search" onclick="applyFilters()">🔍 ค้นหา</button>
+        <button class="btn-clear" onclick="clearFilters()">🔄 ล้างค่า</button>
     </div>
 
     <div id="loader" class="loader">⏳ กำลังโหลดข้อมูล...</div>
@@ -93,14 +93,12 @@
 </div>
 
 <script>
-    // ⚠️ นำ API URL ของคุณมาใส่ตรงนี้
+    // URL ของคุณใส่ไว้ให้แล้วครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec";
     
     let allData = [];
-
     const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 
-    // โหลดข้อมูลครั้งแรกเมื่อเปิดหน้า
     window.onload = async function() {
         document.getElementById('loader').style.display = 'block';
         try {
@@ -111,38 +109,34 @@
             });
             allData = await resp.json();
             
-            populateNameFilter();
+            // แสดงข้อมูลทั้งหมดตอนเปิดหน้าครั้งแรก
             renderTable(allData);
         } catch(e) {
-            alert("ไม่สามารถดึงข้อมูลได้ กรุณาลองใหม่");
+            console.error(e);
+            alert("ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าได้ Deploy Google Apps Script ใหม่แล้วหรือยัง");
         }
         document.getElementById('loader').style.display = 'none';
     };
 
-    // นำรายชื่อพนักงานทั้งหมดไปใส่ใน Dropdown
-    function populateNameFilter() {
-        const select = document.getElementById('nameFilter');
-        const uniqueNames = [...new Set(allData.map(item => item.name).filter(name => name !== "-"))];
-        
-        uniqueNames.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.innerText = name;
-            select.appendChild(option);
-        });
+    // ฟังก์ชันเคลียร์ค่าการค้นหา
+    function clearFilters() {
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('nameFilter').value = '';
+        renderTable(allData);
     }
 
     // ฟังก์ชันกรองข้อมูลตามวันที่และชื่อ
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const nameFilter = document.getElementById('nameFilter').value;
+        const nameSearch = document.getElementById('nameFilter').value.trim().toLowerCase();
 
         let filteredData = allData;
 
-        // กรองชื่อ
-        if (nameFilter !== "all") {
-            filteredData = filteredData.filter(item => item.name === nameFilter);
+        // กรองชื่อ (พิมพ์คำไหน เจอคำนั้น)
+        if (nameSearch !== "") {
+            filteredData = filteredData.filter(item => item.name.toLowerCase().includes(nameSearch));
         }
 
         // กรองวันที่
@@ -150,7 +144,6 @@
             filteredData = filteredData.filter(item => {
                 if (!item.rawDate) return false;
                 
-                // แปลงรูปแบบวันที่จาก Sheet ให้เปรียบเทียบได้
                 const rowDate = new Date(item.rawDate);
                 rowDate.setHours(0,0,0,0);
 
@@ -181,27 +174,25 @@
         tbody.innerHTML = '';
 
         if(dataArray.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #666;">ไม่มีข้อมูลในช่วงที่เลือก หรือไม่มีรายชื่อนี้</td></tr>';
             return;
         }
 
         dataArray.forEach(item => {
             let tr = document.createElement('tr');
             
-            // หาชื่อวันในสัปดาห์
             let dayName = "-";
             if(item.rawDate) {
                 const d = new Date(item.rawDate);
                 dayName = dayNames[d.getDay()];
             }
 
-            // เช็คว่ามาสายหรือไม่ (เกิน 08:30:00)
             let isLate = false;
             let timeInHtml = item.timeIn;
             let remark = "ปกติ";
 
+            // เช็คสาย (> 08:30:00)
             if (item.timeIn && item.timeIn !== "-") {
-                // เทียบเวลาตรงๆ (String)
                 if (item.timeIn > "08:30:00") {
                     isLate = true;
                     timeInHtml = `<span class="late">${item.timeIn}</span>`;
@@ -209,7 +200,6 @@
                 }
             }
 
-            // ปุ่มดูข้อมูล
             let btnHtml = `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
             if (!item.image && !item.location) {
                 btnHtml = `<span style="color:#aaa;">ไม่มีข้อมูล</span>`;
@@ -228,12 +218,10 @@
         });
     }
 
-    // เปิด-ปิด Modal หน้าต่างป๊อปอัพ
     function openModal(imgUrl, mapUrl) {
         document.getElementById('modalImg').src = imgUrl ? imgUrl : "https://via.placeholder.com/300?text=No+Image";
         document.getElementById('modalMap').href = mapUrl ? mapUrl : "#";
         document.getElementById('modalMap').style.display = mapUrl ? "inline-block" : "none";
-        
         document.getElementById('infoModal').style.display = "flex";
     }
 
