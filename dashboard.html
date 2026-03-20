@@ -95,7 +95,7 @@
 </div>
 
 <script>
-    // ⚠️ ตรงนี้คือจุดสำคัญ: อย่าลืมแก้ API_URL เป็นของคุณเองเหมือนเดิมนะครับ
+    // ⚠️ อย่าลืมแก้ตรงนี้เป็นลิงก์ API อันใหม่ล่าสุดของคุณนะครับ!
     const API_URL = "https://script.google.com/macros/s/AKfycbw7E2sLBqrjIcNiWM4OtywgZmGUn8dkpq94IUbPQ7azVh2YnIdtMjy_qatoEk-U8PPDfQ/exec";
     
     let allLogs = [];
@@ -112,7 +112,7 @@
             const data = await response.json();
             
             if (Array.isArray(data)) {
-                alert("⚠️ แจ้งเตือน: กรุณากลับไปที่ Google Apps Script แล้วกด Deploy -> Manage Deployments -> กดรูปดินสอแก้ไข -> เลือก 'เวอร์ชันใหม่' (New Version)");
+                alert("⚠️ แจ้งเตือน: กรุณากลับไปที่ Google Apps Script แล้วกด Deploy เป็น 'เวอร์ชันใหม่'");
                 allLogs = data; 
                 populateNameDropdown([]); 
             } else {
@@ -135,7 +135,10 @@
         if (!empArray || empArray.length === 0) return; 
         
         const nameSelect = document.getElementById('nameFilter');
-        const uniqueNames = [...new Set(empArray)].sort(); 
+        
+        // ✨ ตัดช่องว่างหน้า-หลังของชื่อทุกคนออกก่อน เพื่อป้องกันปัญหาชื่อไม่ตรง
+        const cleanNames = empArray.map(name => name ? String(name).trim() : "").filter(name => name !== "");
+        const uniqueNames = [...new Set(cleanNames)].sort(); 
 
         nameSelect.innerHTML = '<option value="">-- ดูทุกคน --</option>';
         uniqueNames.forEach(name => {
@@ -169,12 +172,17 @@
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const nameSearch = document.getElementById('nameFilter').value;
+        // ✨ ดึงชื่อที่เลือกมา แล้วตัดช่องว่างทิ้ง
+        const nameSearch = document.getElementById('nameFilter').value.trim();
 
         let filteredData = allLogs;
 
+        // กรองตามชื่อ (นำชื่อในตารางมาตัดช่องว่างก่อนเทียบด้วย)
         if (nameSearch !== "") {
-            filteredData = filteredData.filter(item => item.name === nameSearch);
+            filteredData = filteredData.filter(item => {
+                const itemName = item.name ? String(item.name).trim() : "";
+                return itemName === nameSearch;
+            });
         }
 
         if (startDate || endDate) {
@@ -248,7 +256,6 @@
     }
 
     function openModal(imgUrl, mapUrl) {
-        // จัดการเรื่องรูปภาพใหม่ให้ปลอดภัย ไม่ค้าง
         const imgElement = document.getElementById('modalImg');
         const noImageText = document.getElementById('noImageText');
         
@@ -262,7 +269,6 @@
             noImageText.style.display = "block";
         }
 
-        // จัดการแผนที่
         document.getElementById('modalMap').href = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? mapUrl : "#";
         document.getElementById('modalMap').style.display = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? "inline-block" : "none";
         
