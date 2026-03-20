@@ -10,7 +10,6 @@
         .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #00B900; margin-bottom: 20px; }
         
-        /* Filter Section */
         .filter-box { display: flex; flex-wrap: wrap; gap: 15px; background: #e9ecef; padding: 15px; border-radius: 10px; margin-bottom: 20px; align-items: center; }
         .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
         label { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
@@ -19,7 +18,6 @@
         button.btn-search:hover { background: #009900; }
         button.btn-clear { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
 
-        /* Table Section */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
         th, td { padding: 12px; border: 1px solid #ddd; text-align: center; }
         th { background: #00B900; color: white; }
@@ -30,7 +28,6 @@
         .btn-view { background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
         .btn-view:hover { background: #138496; }
 
-        /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; }
         .modal-content img { max-width: 100%; height: auto; border-radius: 10px; margin-bottom: 15px; }
@@ -77,13 +74,13 @@
             </tr>
         </thead>
         <tbody id="tableBody">
-            </tbody>
+        </tbody>
     </table>
 </div>
 
 <div class="modal" id="infoModal">
     <div class="modal-content">
-        <h3 style="margin-top:0;">ข้อมูลสแกนเข้างาน</h3>
+        <h3 style="margin-top:0;">ข้อมูลสแกน</h3>
         <img id="modalImg" src="" alt="ไม่มีรูปภาพ" onerror="this.src='https://via.placeholder.com/300?text=No+Image';">
         <div>
             <a id="modalMap" href="#" target="_blank" class="map-link">📍 ดูแผนที่ (GPS)</a>
@@ -93,7 +90,6 @@
 </div>
 
 <script>
-    // URL ของคุณใส่ไว้ให้แล้วครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec";
     
     let allData = [];
@@ -108,17 +104,15 @@
                 body: JSON.stringify({ action: 'getAllData' })
             });
             allData = await resp.json();
-            
-            // แสดงข้อมูลทั้งหมดตอนเปิดหน้าครั้งแรก
             renderTable(allData);
         } catch(e) {
             console.error(e);
             alert("ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าได้ Deploy Google Apps Script ใหม่แล้วหรือยัง");
+        } finally {
+            document.getElementById('loader').style.display = 'none';
         }
-        document.getElementById('loader').style.display = 'none';
     };
 
-    // ฟังก์ชันเคลียร์ค่าการค้นหา
     function clearFilters() {
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
@@ -126,7 +120,14 @@
         renderTable(allData);
     }
 
-    // ฟังก์ชันกรองข้อมูลตามวันที่และชื่อ
+    // ฟังก์ชันแปลงวันที่แบบไทย (DD/MM/YYYY) เป็นระบบให้ค้นหาได้
+    function parseDateTH(dateStr) {
+        if (!dateStr || dateStr === "-") return null;
+        let parts = dateStr.split('/');
+        if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+        return null;
+    }
+
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
@@ -134,17 +135,14 @@
 
         let filteredData = allData;
 
-        // กรองชื่อ (พิมพ์คำไหน เจอคำนั้น)
         if (nameSearch !== "") {
             filteredData = filteredData.filter(item => item.name.toLowerCase().includes(nameSearch));
         }
 
-        // กรองวันที่
         if (startDate || endDate) {
             filteredData = filteredData.filter(item => {
-                if (!item.rawDate) return false;
-                
-                const rowDate = new Date(item.rawDate);
+                const rowDate = parseDateTH(item.rawDate);
+                if (!rowDate) return false;
                 rowDate.setHours(0,0,0,0);
 
                 let isAfterStart = true;
@@ -160,21 +158,18 @@
                     eDate.setHours(0,0,0,0);
                     isBeforeEnd = rowDate <= eDate;
                 }
-
                 return isAfterStart && isBeforeEnd;
             });
         }
-
         renderTable(filteredData);
     }
 
-    // ฟังก์ชันแสดงตาราง
     function renderTable(dataArray) {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
         if(dataArray.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #666;">ไม่มีข้อมูลในช่วงที่เลือก หรือไม่มีรายชื่อนี้</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #666;">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>';
             return;
         }
 
@@ -182,16 +177,13 @@
             let tr = document.createElement('tr');
             
             let dayName = "-";
-            if(item.rawDate) {
-                const d = new Date(item.rawDate);
-                dayName = dayNames[d.getDay()];
-            }
+            const d = parseDateTH(item.rawDate);
+            if(d) { dayName = dayNames[d.getDay()]; }
 
             let isLate = false;
             let timeInHtml = item.timeIn;
             let remark = "ปกติ";
 
-            // เช็คสาย (> 08:30:00)
             if (item.timeIn && item.timeIn !== "-") {
                 if (item.timeIn > "08:30:00") {
                     isLate = true;
@@ -220,8 +212,8 @@
 
     function openModal(imgUrl, mapUrl) {
         document.getElementById('modalImg').src = imgUrl ? imgUrl : "https://via.placeholder.com/300?text=No+Image";
-        document.getElementById('modalMap').href = mapUrl ? mapUrl : "#";
-        document.getElementById('modalMap').style.display = mapUrl ? "inline-block" : "none";
+        document.getElementById('modalMap').href = mapUrl && mapUrl !== "ไม่ระบุ" ? mapUrl : "#";
+        document.getElementById('modalMap').style.display = mapUrl && mapUrl !== "ไม่ระบุ" ? "inline-block" : "none";
         document.getElementById('infoModal').style.display = "flex";
     }
 
