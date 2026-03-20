@@ -92,8 +92,8 @@
 </div>
 
 <script>
-    // URL Web App ของคุณ
-    const API_URL = "https://script.google.com/macros/s/AKfycbxNVeglvf8x35UHrh1ERJGO0_V060_f3oIj_Aqd-Hw6LMLY98ec3YzH7SeggEGG3NEAOQ/exec";
+    // ⚠️ อย่าลืมเอา URL ของคุณมาใส่แทนที่ลิงก์นี้นะครับ ไม่งั้นจะโหลดค้าง
+    const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec";
     
     let allData = [];
     const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -101,34 +101,44 @@
     window.onload = async function() {
         document.getElementById('loader').style.display = 'block';
         try {
-            const resp = await fetch(API_URL, {
+            // 1. ดึงข้อมูลการลงเวลาทั้งหมด
+            const respData = await fetch(API_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: 'getAllData' })
             });
-            allData = await resp.json();
+            allData = await respData.json();
+
+            // 2. ดึงรายชื่อจากชีต "พนักงาน"
+            const respEmp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: 'getEmployees' })
+            });
+            const empList = await respEmp.json();
             
-            // เรียกใช้ฟังก์ชันสร้าง Dropdown รายชื่อ
-            populateNameDropdown(allData);
+            // สร้าง Dropdown จากชีตพนักงาน
+            populateNameDropdown(empList);
             
+            // แสดงตารางข้อมูลลงเวลา
             renderTable(allData);
         } catch(e) {
-            console.error(e);
-            alert("ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าได้ Deploy Google Apps Script ใหม่แล้วหรือยัง");
+            console.error("Error Fetching Data:", e);
+            alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้ โปรดเช็คลิงก์ API_URL หรือการ Deploy อีกครั้ง");
         } finally {
             document.getElementById('loader').style.display = 'none';
         }
     };
 
-    // ฟังก์ชันสร้างตัวเลือกชื่อพนักงานแบบไม่ซ้ำกัน
-    function populateNameDropdown(dataArray) {
+    // ฟังก์ชันสร้างตัวเลือกชื่อพนักงานจากชีต "พนักงาน"
+    function populateNameDropdown(empList) {
         const nameSelect = document.getElementById('nameFilter');
         
-        // ดึงเฉพาะ "ชื่อ" ออกมา และใช้ Set เพื่อตัดชื่อที่ซ้ำกันออก
-        const uniqueNames = [...new Set(dataArray.map(item => item.name))];
-        
-        // เรียงลำดับชื่อตามตัวอักษร ก-ฮ
-        uniqueNames.sort();
+        // ใช้ Set กรองเผื่อมีชื่อซ้ำ และเรียง ก-ฮ
+        const uniqueNames = [...new Set(empList)].sort();
+
+        // รีเซ็ตตัวเลือก
+        nameSelect.innerHTML = '<option value="">-- ดูทุกคน --</option>';
 
         // ใส่ข้อมูลลงใน Dropdown
         uniqueNames.forEach(name => {
@@ -164,7 +174,7 @@
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const nameSearch = document.getElementById('nameFilter').value; // ดึงค่าจาก Dropdown
+        const nameSearch = document.getElementById('nameFilter').value; 
 
         let filteredData = allData;
 
