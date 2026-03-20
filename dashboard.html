@@ -92,62 +92,47 @@
 </div>
 
 <script>
-    // ⚠️ อย่าลืมเอา URL ของคุณมาใส่แทนที่ลิงก์นี้นะครับ ไม่งั้นจะโหลดค้าง
-    const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec";
+    // ⚠️ วาง API_URL ของคุณตรงนี้นะครับ
+    const API_URL = "https://script.google.com/macros/s/AKfycbxNVeglvf8x35UHrh1ERJGO0_V060_f3oIj_Aqd-Hw6LMLY98ec3YzH7SeggEGG3NEAOQ/exec";
     
-    let allData = [];
+    let allLogs = [];
     const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 
     window.onload = async function() {
         document.getElementById('loader').style.display = 'block';
         try {
-            // 1. ดึงข้อมูลการลงเวลาทั้งหมด
-            const respData = await fetch(API_URL, {
+            // ยิงข้อมูลไปขอรอบเดียว ได้มาทั้งตารางและรายชื่อ
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: 'getAllData' })
             });
-            allData = await respData.json();
-
-            // 2. ดึงรายชื่อจากชีต "พนักงาน"
-            const respEmp = await fetch(API_URL, {
-                method: 'POST',
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: 'getEmployees' })
-            });
-            const empList = await respEmp.json();
+            const data = await response.json();
             
-            // สร้าง Dropdown จากชีตพนักงาน
+            allLogs = data.logs; // ข้อมูลตาราง
+            const empList = data.employees; // รายชื่อพนักงาน
+            
             populateNameDropdown(empList);
-            
-            // แสดงตารางข้อมูลลงเวลา
-            renderTable(allData);
+            renderTable(allLogs);
+
         } catch(e) {
-            console.error("Error Fetching Data:", e);
-            alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้ โปรดเช็คลิงก์ API_URL หรือการ Deploy อีกครั้ง");
+            console.error("Fetch Error:", e);
+            alert("เชื่อมต่อไม่สำเร็จ โปรดตรวจสอบการ Deploy (ต้องเลือก เวอร์ชันใหม่)");
         } finally {
             document.getElementById('loader').style.display = 'none';
         }
     };
 
-    // ฟังก์ชันสร้างตัวเลือกชื่อพนักงานจากชีต "พนักงาน"
-    function populateNameDropdown(empList) {
+    function populateNameDropdown(empArray) {
         const nameSelect = document.getElementById('nameFilter');
-        
-        // ใช้ Set กรองเผื่อมีชื่อซ้ำ และเรียง ก-ฮ
-        const uniqueNames = [...new Set(empList)].sort();
+        const uniqueNames = [...new Set(empArray)].sort(); // กรองชื่อซ้ำ + เรียง ก-ฮ
 
-        // รีเซ็ตตัวเลือก
         nameSelect.innerHTML = '<option value="">-- ดูทุกคน --</option>';
-
-        // ใส่ข้อมูลลงใน Dropdown
         uniqueNames.forEach(name => {
-            if (name && name !== "-") {
-                let option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                nameSelect.appendChild(option);
-            }
+            let option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            nameSelect.appendChild(option);
         });
     }
 
@@ -155,7 +140,7 @@
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
         document.getElementById('nameFilter').value = '';
-        renderTable(allData);
+        renderTable(allLogs);
     }
 
     function parseDateTH(dateStr) {
@@ -174,16 +159,14 @@
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const nameSearch = document.getElementById('nameFilter').value; 
+        const nameSearch = document.getElementById('nameFilter').value;
 
-        let filteredData = allData;
+        let filteredData = allLogs;
 
-        // กรองตามชื่อ
         if (nameSearch !== "") {
             filteredData = filteredData.filter(item => item.name === nameSearch);
         }
 
-        // กรองตามวันที่
         if (startDate || endDate) {
             filteredData = filteredData.filter(item => {
                 const rowDate = parseDateTH(item.rawDate);
@@ -220,7 +203,6 @@
 
         dataArray.forEach(item => {
             let tr = document.createElement('tr');
-            
             let dayName = "-";
             const d = parseDateTH(item.rawDate);
             if(d) { dayName = dayNames[d.getDay()]; }
