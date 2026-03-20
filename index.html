@@ -8,93 +8,45 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { 
-            font-family: 'Sarabun', sans-serif; 
-            margin: 0; padding: 0; 
-            background: #f4f7f6; 
-            display: flex; justify-content: center;
-            color: #333;
-        }
-        .app-container {
-            width: 100%; max-width: 480px; 
-            min-height: 100vh; background: #fff;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            position: relative; overflow-x: hidden;
-        }
+        body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; background: #f4f7f6; display: flex; justify-content: center; color: #333; }
+        .app-container { width: 100%; max-width: 480px; min-height: 100vh; background: #fff; box-shadow: 0 0 15px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; }
         .header { background: #00B900; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
         .header h2 { margin: 0; font-weight: 500; font-size: 22px; }
         .content { padding: 20px; text-align: center; }
-        
         .time-box { margin-bottom: 20px; }
         .clock { font-size: 40px; font-weight: 700; color: #00B900; line-height: 1; margin-bottom: 5px; }
         .date { font-size: 16px; color: #666; }
-
-        .video-container { 
-            width: 100%; height: 300px; 
-            background: #000; border-radius: 15px; 
-            overflow: hidden; position: relative;
-            margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
+        .video-container { width: 100%; height: 300px; background: #000; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         video { width: 100%; height: 100%; object-fit: cover; }
-        
         .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        .btn { 
-            flex: 1; padding: 15px; border: none; border-radius: 10px; 
-            font-size: 18px; font-weight: 500; color: white; font-family: 'Sarabun', sans-serif;
-            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;
-        }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: 500; color: white; font-family: 'Sarabun', sans-serif; cursor: pointer; transition: 0.2s; }
         .btn:active { transform: scale(0.95); }
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
         .btn-history { background: #6c757d; width: 100%; padding: 12px; margin-top: 10px; }
         .btn-reg { background: #007bff; width: 100%; margin-top: 20px; }
-
-        input[type="text"] {
-            width: 100%; padding: 15px; border: 1px solid #ddd; 
-            border-radius: 10px; font-family: 'Sarabun', sans-serif; font-size: 16px;
-            box-sizing: border-box; text-align: center;
-        }
-
-        .loader-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 1000; display: none;
-        }
+        input[type="text"] { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; text-align: center; }
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; display: none; }
         .progress-box { width: 80%; max-width: 300px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin-top: 20px; height: 15px; }
         .progress-bar { width: 0%; height: 100%; background: #00B900; transition: width 0.4s ease; }
         .loader-text { margin-top: 15px; font-size: 18px; font-weight: 500; color: #333; }
-        .spinner { font-size: 50px; animation: bounce 1s infinite alternate; }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-20px); } }
-
-        .history-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 500; display: none; overflow-y: auto;
-            padding-bottom: 30px;
-        }
-        .history-item { 
-            background: #f8f9fa; margin: 10px 20px; padding: 15px; 
-            border-radius: 10px; border-left: 5px solid #00B900; text-align: left;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .btn-close { background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 20px; font-family: 'Sarabun', sans-serif; }
-
+        .history-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 500; display: none; overflow-y: auto; padding-bottom: 30px; }
+        .history-item { background: #f8f9fa; margin: 10px 20px; padding: 15px; border-radius: 10px; border-left: 5px solid #00B900; text-align: left; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 <canvas id="canvas" style="display:none;"></canvas>
-
 <div class="app-container">
-    
     <div class="loader-overlay" id="loader">
-        <div class="spinner">📍</div>
+        <div class="spinner" style="font-size:50px;">⏳</div>
         <div class="loader-text" id="loader-text">กำลังเตรียมพร้อม...</div>
         <div class="progress-box"><div class="progress-bar" id="progress-bar"></div></div>
     </div>
 
     <div id="reg-form" class="content hidden">
         <h2 style="color: #007bff;">ลงทะเบียนใช้งานครั้งแรก</h2>
-        <p style="color: #666;">กรุณาระบุชื่อ-นามสกุล ของคุณเพื่อผูกกับระบบ</p>
+        <p>กรุณาระบุชื่อ-นามสกุล ของคุณ</p>
         <input type="text" id="regName" placeholder="ระบุ ชื่อ-นามสกุล">
         <button class="btn btn-reg" onclick="register()">ลงทะเบียน</button>
     </div>
@@ -104,17 +56,14 @@
             <h2>ระบบบันทึกเวลาทำงาน</h2>
             <div id="welcomeMsg" style="font-size: 14px; margin-top: 5px; opacity: 0.9;">สวัสดีคุณ...</div>
         </div>
-        
         <div class="content">
             <div class="time-box">
                 <div class="clock" id="clock">00:00:00</div>
                 <div class="date" id="date">วัน เดือน ปี</div>
             </div>
-
             <div class="video-container">
                 <video id="video" autoplay muted playsinline></video>
             </div>
-
             <div class="btn-group">
                 <button class="btn btn-in" onclick="processAttendance('in')">สแกนเข้างาน</button>
                 <button class="btn btn-out" onclick="processAttendance('out')">สแกนออกงาน</button>
@@ -125,28 +74,22 @@
 
     <div class="history-modal" id="history-modal">
         <div class="header" style="background: #6c757d; border-radius: 0;">
-            <h2>ประวัติย้อนหลัง (10 รายการล่าสุด)</h2>
+            <h2>ประวัติย้อนหลัง 10 รายการ</h2>
         </div>
         <div id="history-list"></div>
         <div style="text-align: center;">
-            <button class="btn-close" onclick="document.getElementById('history-modal').style.display='none'">ปิดหน้าต่าง</button>
+            <button class="btn" style="background:#dc3545; margin-top:20px;" onclick="document.getElementById('history-modal').style.display='none'">ปิดหน้าต่าง</button>
         </div>
     </div>
-
 </div>
 
 <script>
-    // ========================================================
-    // ⚙️ ตั้งค่าระบบ
-    // ========================================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbyLmuQd8Ok0wVCrmmCYV93JlnOyC8jdMKzV9yejAWYZN65Rgn-8qhYAcne-ILN6jogPSw/exec"; 
+    // ⚙️ ตั้งค่า (ใช้ URL เดิมที่คุณให้มา)
+    const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
-
-    // 📍 ตั้งค่าพิกัดสถานที่ทำงาน (ให้เอาพิกัดบริษัทคุณมาใส่ที่นี่)
-    const OFFICE_LAT = 16.808436;  // แก้ตรงนี้: ละติจูดของที่ทำงาน (ตัวอย่างคือ กทม.)
-    const OFFICE_LNG = 100.263549; // แก้ตรงนี้: ลองจิจูดของที่ทำงาน
-    const ALLOWED_RADIUS = 200;  // รัศมีที่อนุญาตให้สแกนได้ (หน่วยเป็น: เมตร)
-    // ========================================================
+    const OFFICE_LAT = 16.808436; 
+    const OFFICE_LNG = 100.263549; 
+    const ALLOWED_RADIUS = 200; 
 
     let userProfile = {};
     let registeredName = "";
@@ -154,230 +97,135 @@
     function updateClock() {
         const now = new Date();
         document.getElementById('clock').innerText = now.toLocaleTimeString('th-TH', { hour12: false });
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('date').innerText = now.toLocaleDateString('th-TH', options);
+        document.getElementById('date').innerText = now.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     }
     setInterval(updateClock, 1000);
-    updateClock();
 
     async function initLiff() {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
-            liff.login();
-        } else {
-            userProfile = await liff.getProfile();
-            checkRegistration();
-        }
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            } else {
+                userProfile = await liff.getProfile();
+                checkRegistration();
+            }
+        } catch (e) { console.error("LIFF Error", e); }
     }
 
     async function checkRegistration() {
         showLoader("กำลังตรวจสอบข้อมูล...", 50);
         try {
-            const resp = await fetch(`${API_URL}?userId=${userProfile.userId}`);
-            const result = await resp.text();
+            // แก้ไขจุดที่ 1: เปลี่ยนวิธีรับข้อมูลจาก .text() เป็น .json() ให้ตรงกับสคริปต์
+            const resp = await fetch(`${API_URL}?userId=${userProfile.userId}`, { method: 'GET', redirect: 'follow' });
+            const result = await resp.json();
             
             hideLoader();
-            if (result === "not_found") {
-                document.getElementById('reg-form').classList.remove('hidden');
-            } else {
-                registeredName = result;
+            if (result.isRegistered) {
+                registeredName = result.name;
                 document.getElementById('welcomeMsg').innerText = "พนักงาน: " + registeredName;
                 document.getElementById('main-app').classList.remove('hidden');
                 startVideo();
+            } else {
+                document.getElementById('reg-form').classList.remove('hidden');
             }
         } catch(e) {
-            alert("เชื่อมต่อฐานข้อมูลล้มเหลว");
+            console.error(e);
             hideLoader();
+            document.getElementById('reg-form').classList.remove('hidden'); // กรณี Error ให้ลองไปหน้าลงทะเบียน
         }
     }
 
     function startVideo() {
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
             .then(stream => { document.getElementById('video').srcObject = stream; })
-            .catch(err => alert("กรุณาอนุญาตการเข้าถึงกล้องถ่ายรูป"));
+            .catch(err => alert("กรุณาอนุญาตการเข้าถึงกล้อง"));
     }
 
     function showLoader(text, percent, icon="⏳") {
         document.getElementById('loader').style.display = 'flex';
-        document.querySelector('.spinner').innerText = icon;
         document.getElementById('loader-text').innerText = text;
         document.getElementById('progress-bar').style.width = percent + '%';
     }
-    function hideLoader() {
-        document.getElementById('loader').style.display = 'none';
-    }
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    function hideLoader() { document.getElementById('loader').style.display = 'none'; }
 
-    // สูตรคำนวณระยะทางจากพิกัด (Haversine formula)
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; // รัศมีโลก (เมตร)
-        const rad1 = lat1 * Math.PI / 180;
-        const rad2 = lat2 * Math.PI / 180;
-        const deltaLat = (lat2 - lat1) * Math.PI / 180;
-        const deltaLon = (lon2 - lon1) * Math.PI / 180;
-
-        const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-                  Math.cos(rad1) * Math.cos(rad2) *
-                  Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c; // คืนค่าเป็นระยะห่าง (เมตร)
+        const R = 6371e3;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
 
-    // ฟังก์ชันดึงพิกัดและตรวจสอบแบบใหม่
-    function checkLocationData() {
-        return new Promise((resolve) => {
-            if (!navigator.geolocation) {
-                resolve({ error: "มือถือของคุณไม่รองรับระบบ GPS" });
-            } else {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => { 
-                        resolve({
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            mapLink: `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`,
-                            error: null
-                        }); 
-                    },
-                    (error) => { resolve({ error: "กรุณาเปิด GPS ตำแหน่งที่ตั้งในมือถือก่อนสแกน" }); },
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            }
-        });
-    }
-
-    // สแกนใบหน้า ถ่ายรูป และบันทึก
     async function processAttendance(type) {
-        let typeText = type === 'in' ? 'เข้างาน' : 'ออกงาน';
-        document.getElementById('progress-bar').style.background = "#00B900"; 
-        
         showLoader("กำลังตรวจสอบพิกัด...", 20, "📍");
-
-        // ตรวจสอบ GPS และจำกัดพื้นที่ -------------------
-        const locData = await checkLocationData();
-        if (locData.error) {
-            showLoader(locData.error, 100, "❌");
-            document.getElementById('progress-bar').style.background = "red";
-            await sleep(3000); hideLoader();
-            return; // หยุดการทำงานทันทีถ้าไม่เปิด GPS
-        }
-
-        // คำนวณระยะห่าง
-        const distance = calculateDistance(locData.lat, locData.lng, OFFICE_LAT, OFFICE_LNG);
-        if (distance > ALLOWED_RADIUS) {
-            showLoader(`คุณอยู่นอกพื้นที่! (ห่าง ${Math.round(distance)} เมตร)`, 100, "🛑");
-            document.getElementById('progress-bar').style.background = "red";
-            await sleep(4000); hideLoader();
-            return; // หยุดการทำงานทันทีถ้าอยู่นอกเขต
-        }
-        // ------------------------------------------
-
-        showLoader("กำลังถ่ายภาพ...", 40, "📸");
-
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const context = canvas.getContext('2d');
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
-
-        showLoader("กำลังบันทึกข้อมูล...", 70, "☁️");
-
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                redirect: 'follow',
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
-                body: JSON.stringify({ 
-                    action: 'attendance', 
-                    name: registeredName, 
-                    type: type,
-                    location: locData.mapLink,    
-                    image: imageDataUrl       
-                })
-            });
-
-            const resultText = await response.text(); 
-
-            if (resultText === "Success") {
-                showLoader(`บันทึกเวลา${typeText} สำเร็จ!`, 100, "✅");
-                await sleep(2500); 
-                window.location.reload(); 
-            } else {
-                throw new Error(resultText); 
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
+            if (dist > ALLOWED_RADIUS) {
+                alert(`คุณอยู่นอกพื้นที่! (ห่าง ${Math.round(dist)} ม.)`);
+                hideLoader();
+                return;
             }
 
-        } catch (err) {
-            console.error(err);
-            showLoader("ระบบขัดข้อง: " + err.message, 100, "❌");
-            document.getElementById('progress-bar').style.background = "red";
-            await sleep(4000); 
-            hideLoader();
-        }
+            showLoader("กำลังถ่ายภาพ...", 50, "📸");
+            const canvas = document.getElementById('canvas');
+            const video = document.getElementById('video');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const img = canvas.toDataURL('image/jpeg', 0.5);
+
+            showLoader("กำลังบันทึก...", 80, "☁️");
+            try {
+                // แก้ไขจุดที่ 2: ส่งเป็น JSON String ให้ตรงกับ doPost
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`, image: img })
+                });
+                const resText = await response.text();
+                if(resText.includes("Success")) {
+                    alert("บันทึกสำเร็จ!");
+                    location.reload();
+                }
+            } catch (e) { alert("เกิดข้อผิดพลาด"); hideLoader(); }
+        }, () => { alert("กรุณาเปิด GPS"); hideLoader(); }, { enableHighAccuracy: true });
     }
 
     async function register() {
         const name = document.getElementById('regName').value;
-        if(!name) return alert("กรุณากรอกชื่อ-นามสกุล");
-        
-        showLoader("กำลังบันทึกข้อมูล...", 50, "📝");
+        if(!name) return alert("ระบุชื่อด้วยครับ");
+        showLoader("บันทึกข้อมูล...", 50);
         try {
             await fetch(API_URL, {
                 method: 'POST',
                 redirect: 'follow',
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: 'register', userId: userProfile.userId, name: name })
             });
-            showLoader("ลงทะเบียนสำเร็จ!", 100, "🎉");
-            await sleep(1000);
+            alert("ลงทะเบียนสำเร็จ");
             location.reload();
-        } catch (err) {
-            alert("ลงทะเบียนไม่สำเร็จ");
-            hideLoader();
-        }
+        } catch(e) { alert("ล้มเหลว"); hideLoader(); }
     }
 
     async function fetchHistory() {
-        showLoader("กำลังดึงข้อมูลประวัติ...", 60, "📅");
+        showLoader("ดึงประวัติ...", 50);
         try {
             const resp = await fetch(API_URL, {
                 method: 'POST',
                 redirect: 'follow',
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: 'history', name: registeredName })
             });
             const data = await resp.json();
-            
-            const listDiv = document.getElementById('history-list');
-            listDiv.innerHTML = '';
-            
-            if(data.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center; margin-top:20px;">ไม่มีประวัติการลงเวลา</p>';
-            } else {
-                data.forEach(item => {
-                    listDiv.innerHTML += `
-                        <div class="history-item">
-                            <strong>วันที่:</strong> ${item.date} <br>
-                            <strong style="color:#28a745;">เวลาเข้า:</strong> ${item.timeIn} <br>
-                            <strong style="color:#dc3545;">เวลาออก:</strong> ${item.timeOut} <br>
-                            <span style="font-size:12px; color:#666;">สถานะ: ${item.status}</span>
-                        </div>
-                    `;
-                });
-            }
-            hideLoader();
+            let html = '';
+            data.forEach(h => {
+                html += `<div class="history-item">📅 ${h.date}<br>✅ เข้า: ${h.timeIn} | ❌ ออก: ${h.timeOut}</div>`;
+            });
+            document.getElementById('history-list').innerHTML = html || '<p>ไม่พบข้อมูล</p>';
             document.getElementById('history-modal').style.display = 'block';
-        } catch(e) {
-            alert("ดึงประวัติไม่สำเร็จ");
             hideLoader();
-        }
+        } catch(e) { alert("ดึงข้อมูลไม่สำเร็จ"); hideLoader(); }
     }
 
     initLiff();
-
 </script>
 </body>
 </html>
