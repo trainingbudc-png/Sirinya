@@ -54,7 +54,7 @@
         <div class="filter-item">
             <label>เลือกพนักงาน:</label>
             <select id="nameFilter">
-                <option value="">-- ทุกคน --</option>
+                <option value="">-- ดูทุกคน --</option>
             </select>
         </div>
         <button class="btn-search" onclick="applyFilters()">🔍 ค้นหา</button>
@@ -92,7 +92,8 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbypD9M43wzu6CIX2t9Mh2GBAlTN6lHdv6Bh5EqQIgL-yaJCAPT1jCw_jTdi29YH3eN47Q/exec";
+    // URL Web App ของคุณ
+    const API_URL = "https://script.google.com/macros/s/AKfycbxNVeglvf8x35UHrh1ERJGO0_V060_f3oIj_Aqd-Hw6LMLY98ec3YzH7SeggEGG3NEAOQ/exec";
     
     let allData = [];
     const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -107,7 +108,7 @@
             });
             allData = await resp.json();
             
-            // สร้าง Dropdown รายชื่อพนักงานอัตโนมัติ
+            // เรียกใช้ฟังก์ชันสร้าง Dropdown รายชื่อ
             populateNameDropdown(allData);
             
             renderTable(allData);
@@ -119,20 +120,17 @@
         }
     };
 
-    // ฟังก์ชันสำหรับดึงชื่อที่ไม่ซ้ำกันมาใส่ใน Dropdown
+    // ฟังก์ชันสร้างตัวเลือกชื่อพนักงานแบบไม่ซ้ำกัน
     function populateNameDropdown(dataArray) {
         const nameSelect = document.getElementById('nameFilter');
         
-        // กรองเอาเฉพาะชื่อที่ไม่ซ้ำกัน
+        // ดึงเฉพาะ "ชื่อ" ออกมา และใช้ Set เพื่อตัดชื่อที่ซ้ำกันออก
         const uniqueNames = [...new Set(dataArray.map(item => item.name))];
         
-        // เรียงลำดับตัวอักษร ก-ฮ
+        // เรียงลำดับชื่อตามตัวอักษร ก-ฮ
         uniqueNames.sort();
 
-        // รีเซ็ตตัวเลือกให้เหลือแค่ "-- ทุกคน --"
-        nameSelect.innerHTML = '<option value="">-- ทุกคน --</option>';
-
-        // วนลูปสร้างตัวเลือก (Option)
+        // ใส่ข้อมูลลงใน Dropdown
         uniqueNames.forEach(name => {
             if (name && name !== "-") {
                 let option = document.createElement('option');
@@ -166,11 +164,11 @@
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const nameSearch = document.getElementById('nameFilter').value; // เอาค่าจาก Dropdown
+        const nameSearch = document.getElementById('nameFilter').value; // ดึงค่าจาก Dropdown
 
         let filteredData = allData;
 
-        // กรองตามชื่อ (ตรงเป๊ะๆ ตามที่เลือก)
+        // กรองตามชื่อ
         if (nameSearch !== "") {
             filteredData = filteredData.filter(item => item.name === nameSearch);
         }
@@ -230,7 +228,7 @@
             }
 
             let btnHtml = `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
-            if (!item.image && (!item.location || item.location === "ไม่ระบุ")) {
+            if (!item.image && (!item.location || item.location === "ไม่ระบุ" || item.location === "")) {
                 btnHtml = `<span style="color:#aaa;">ไม่มีข้อมูล</span>`;
             }
 
@@ -249,8 +247,8 @@
 
     function openModal(imgUrl, mapUrl) {
         document.getElementById('modalImg').src = imgUrl ? imgUrl : "https://via.placeholder.com/300?text=No+Image";
-        document.getElementById('modalMap').href = mapUrl && mapUrl !== "ไม่ระบุ" ? mapUrl : "#";
-        document.getElementById('modalMap').style.display = mapUrl && mapUrl !== "ไม่ระบุ" ? "inline-block" : "none";
+        document.getElementById('modalMap').href = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? mapUrl : "#";
+        document.getElementById('modalMap').style.display = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? "inline-block" : "none";
         document.getElementById('infoModal').style.display = "flex";
     }
 
