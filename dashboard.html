@@ -92,8 +92,8 @@
 </div>
 
 <script>
-    // ⚠️ วาง API_URL ของคุณตรงนี้นะครับ
-    const API_URL = "https://script.google.com/macros/s/AKfycbxNVeglvf8x35UHrh1ERJGO0_V060_f3oIj_Aqd-Hw6LMLY98ec3YzH7SeggEGG3NEAOQ/exec";
+    // ⚠️ วาง API_URL ของคุณตรงนี้นะครับ (ย้ำ! ต้องเป็นลิงก์ที่ Deploy ใหม่ล่าสุด)
+    const API_URL = "https://script.google.com/macros/s/AKfycbw7E2sLBqrjIcNiWM4OtywgZmGUn8dkpq94IUbPQ7azVh2YnIdtMjy_qatoEk-U8PPDfQ/exec";
     
     let allLogs = [];
     const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -101,7 +101,6 @@
     window.onload = async function() {
         document.getElementById('loader').style.display = 'block';
         try {
-            // ยิงข้อมูลไปขอรอบเดียว ได้มาทั้งตารางและรายชื่อ
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -109,23 +108,33 @@
             });
             const data = await response.json();
             
-            allLogs = data.logs; // ข้อมูลตาราง
-            const empList = data.employees; // รายชื่อพนักงาน
+            // 🚨 ระบบตรวจจับความผิดพลาด: เช็คว่าหลังบ้านเป็นเวอร์ชันเก่าหรือไม่
+            if (Array.isArray(data)) {
+                alert("⚠️ แจ้งเตือน: ระบบตรวจพบว่า Google Apps Script ยังเป็นเวอร์ชันเก่าอยู่! \n\nตารางจะแสดงข้อมูลเท่าที่มี แต่รายชื่อในตัวเลือกจะไม่ขึ้น \n\nกรุณากลับไปที่ Google Apps Script แล้วกด Deploy -> Manage Deployments -> กดรูปดินสอแก้ไข -> เลือก 'เวอร์ชันใหม่' (New Version) ครับ");
+                allLogs = data; 
+                populateNameDropdown([]); // ป้องกันเออเร่อ
+            } else {
+                // ถ้าเป็นเวอร์ชันใหม่ โค้ดจะทำงานส่วนนี้ตามปกติ
+                allLogs = data.logs || []; 
+                const empList = data.employees || []; 
+                populateNameDropdown(empList);
+            }
             
-            populateNameDropdown(empList);
             renderTable(allLogs);
 
         } catch(e) {
             console.error("Fetch Error:", e);
-            alert("เชื่อมต่อไม่สำเร็จ โปรดตรวจสอบการ Deploy (ต้องเลือก เวอร์ชันใหม่)");
+            alert("❌ เชื่อมต่อไม่สำเร็จ: โปรดตรวจสอบลิงก์ API_URL ว่าถูกต้องหรือไม่");
         } finally {
             document.getElementById('loader').style.display = 'none';
         }
     };
 
     function populateNameDropdown(empArray) {
+        if (!empArray || empArray.length === 0) return; // ถ้าไม่มีข้อมูลชื่อ ให้ข้ามไปเลย
+        
         const nameSelect = document.getElementById('nameFilter');
-        const uniqueNames = [...new Set(empArray)].sort(); // กรองชื่อซ้ำ + เรียง ก-ฮ
+        const uniqueNames = [...new Set(empArray)].sort(); 
 
         nameSelect.innerHTML = '<option value="">-- ดูทุกคน --</option>';
         uniqueNames.forEach(name => {
@@ -196,7 +205,7 @@
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
-        if(dataArray.length === 0) {
+        if(!dataArray || dataArray.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #666;">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>';
             return;
         }
