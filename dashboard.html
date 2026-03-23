@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard สรุปการมาสาย</title>
+    <title>Dashboard สรุปเวลาเข้า-ออกงาน</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Sarabun', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
@@ -95,7 +95,7 @@
 </div>
 
 <script>
-    // ⚠️ อย่าลืมแก้ตรงนี้เป็นลิงก์ API อันใหม่ล่าสุดของคุณนะครับ!
+    // ลิงก์ API ของคุณ
     const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec";
     
     let allLogs = [];
@@ -135,8 +135,6 @@
         if (!empArray || empArray.length === 0) return; 
         
         const nameSelect = document.getElementById('nameFilter');
-        
-        // ✨ ตัดช่องว่างหน้า-หลังของชื่อทุกคนออกก่อน เพื่อป้องกันปัญหาชื่อไม่ตรง
         const cleanNames = empArray.map(name => name ? String(name).trim() : "").filter(name => name !== "");
         const uniqueNames = [...new Set(cleanNames)].sort(); 
 
@@ -172,12 +170,10 @@
     function applyFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        // ✨ ดึงชื่อที่เลือกมา แล้วตัดช่องว่างทิ้ง
         const nameSearch = document.getElementById('nameFilter').value.trim();
 
         let filteredData = allLogs;
 
-        // กรองตามชื่อ (นำชื่อในตารางมาตัดช่องว่างก่อนเทียบด้วย)
         if (nameSearch !== "") {
             filteredData = filteredData.filter(item => {
                 const itemName = item.name ? String(item.name).trim() : "";
@@ -255,39 +251,32 @@
         });
     }
 
-   // 1. เพิ่มฟังก์ชันแปลงลิงก์ Google Drive ให้เป็นรูประบบ Thumbnail ที่แสดงผลได้ 100%
     function getDirectImageUrl(url) {
         if (!url || url === "undefined") return "";
         let fileId = "";
         
-        // ถ้าเป็นลิงก์แบบเก่า (file/d/ID/view)
         if (url.includes("/file/d/")) {
             fileId = url.split("/file/d/")[1].split("/")[0];
         } 
-        // ถ้าเป็นลิงก์แบบใหม่ (uc?id=ID หรือ thumbnail?id=ID)
         else if (url.includes("id=")) {
             fileId = url.split("id=")[1].split("&")[0];
         }
 
         if (fileId) {
-            // ใช้ลิงก์ Thumbnail ของ Google ที่รับประกันว่ารูปขึ้นแน่นอน
             return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w800";
         }
-        return url; // ถ้าไม่ใช่ลิงก์ Drive ให้ส่งกลับเป็นลิงก์เดิม
+        return url; 
     }
 
-    // 2. อัปเดตฟังก์ชันเปิดหน้าต่างข้อมูล (Modal)
     function openModal(imgUrl, mapUrl) {
         const imgElement = document.getElementById('modalImg');
         const noImageText = document.getElementById('noImageText');
         
-        // นำลิงก์ที่ได้จาก Sheet มาแปลงก่อนแสดงผล
         const directImgUrl = getDirectImageUrl(imgUrl);
         
         if (directImgUrl && directImgUrl !== "") {
             imgElement.src = directImgUrl;
             imgElement.style.display = "block";
-            // ถ้าคุณไม่มีแท็ก noImageText ใน HTML เดิม ให้ข้ามหรือลบบรรทัดล่างนี้ได้เลยครับ
             if(noImageText) noImageText.style.display = "none"; 
         } else {
             imgElement.src = "";
@@ -295,14 +284,18 @@
             if(noImageText) noImageText.style.display = "block";
         }
 
-        // จัดการส่วนของแผนที่
         const mapElement = document.getElementById('modalMap');
         mapElement.href = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? mapUrl : "#";
         mapElement.style.display = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? "inline-block" : "none";
         
         document.getElementById('infoModal').style.display = "flex";
-    
     }
+
+    // 🌟 นี่คือส่วนที่หายไปครับ (ฟังก์ชันปิดหน้าต่าง)
+    function closeModal() {
+        document.getElementById('infoModal').style.display = "none";
+    }
+
 </script>
 
 </body>
