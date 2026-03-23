@@ -183,7 +183,7 @@
 
     async function fetchHistory() {
         const listDiv = document.getElementById('history-list-main');
-        listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:12px;">กำลังโหลดประวัติล่าสุด...</p>';
+        listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:12px;">กำลังอัปเดตประวัติล่าสุด...</p>';
         try {
             const resp = await fetch(API_URL, {
                 method: 'POST',
@@ -192,14 +192,21 @@
             });
             const data = await resp.json();
             let html = '';
+            
             if(!data || data.length === 0) {
                 listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">ยังไม่มีประวัติการลงเวลา</p>';
                 return;
             }
+
             data.forEach((h, index) => {
                 let statusColor = h.status === "เข้างาน" ? "#28a745" : "#dc3545";
+                
+                // --- ส่วนที่ปรับปรุงใหม่ ---
+                // ถ้าเป็นรายการที่ 0 (ล่าสุด) ให้ใส่ class "active" เพื่อให้กางออกทันที
+                let isActive = (index === 0) ? "active" : ""; 
+                
                 html += `
-                <div class="history-item" id="item-${index}">
+                <div class="history-item ${isActive}" id="item-${index}">
                     <div class="history-header" onclick="toggleHistory(${index})">
                         <span>📅 ${h.date}</span>
                         <span style="color:${statusColor}; font-size:12px;">${h.status}</span>
@@ -211,11 +218,16 @@
                         <div style="display:flex; justify-content:space-between;">
                             <span>❌ <b>ออก:</b></span> <span>${h.timeOut || '-'}</span>
                         </div>
+                        <div style="text-align:right; margin-top:5px; font-size:10px; color:blue;">
+                            (บันทึกสำเร็จแล้ว)
+                        </div>
                     </div>
                 </div>`;
             });
             listDiv.innerHTML = html;
-        } catch(e) { listDiv.innerHTML = '<p style="color:red; text-align:center; font-size:12px;">โหลดประวัติไม่สำเร็จ</p>'; }
+        } catch(e) { 
+            listDiv.innerHTML = '<p style="color:red; text-align:center; font-size:12px;">โหลดประวัติไม่สำเร็จ</p>'; 
+        }
     }
 
     function toggleHistory(index) {
