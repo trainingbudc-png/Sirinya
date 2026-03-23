@@ -25,6 +25,7 @@
         tr:hover { background-color: #f1f1f1; }
         
         .late { color: red; font-weight: bold; } 
+        .overtime { color: #0056b3; font-weight: bold; }
         .btn-view { background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
         .btn-view:hover { background: #138496; }
 
@@ -71,7 +72,9 @@
                 <th>วัน</th>
                 <th>ชื่อ-นามสกุล</th>
                 <th>เวลาเข้างาน</th>
+                <th>สาย (นาที)</th>
                 <th>เวลาออกงาน</th>
+                <th>อยู่ต่อ (นาที)</th>
                 <th>หมายเหตุ</th>
                 <th>ดูข้อมูล</th>
             </tr>
@@ -95,7 +98,7 @@
 </div>
 
 <script>
-    // ลิงก์ API ของคุณ
+    // ⚠️ ลิงก์ API ของคุณ
     const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec";
     
     let allLogs = [];
@@ -206,12 +209,19 @@
         renderTable(filteredData);
     }
 
+    // ฟังก์ชันช่วยแปลงเวลาเป็นนาที เพื่อให้คำนวณง่ายขึ้น
+    function timeToMinutes(timeStr) {
+        if (!timeStr || timeStr === "-") return 0;
+        let parts = timeStr.split(":");
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
     function renderTable(dataArray) {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
         if(!dataArray || dataArray.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #666;">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="padding: 20px; color: #666;">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>';
             return;
         }
 
@@ -221,15 +231,32 @@
             const d = parseDateTH(item.rawDate);
             if(d) { dayName = dayNames[d.getDay()]; }
 
-            let isLate = false;
             let timeInHtml = item.timeIn;
             let remark = "ปกติ";
+            let lateMinutesText = "-";
+            let overMinutesText = "-";
 
+            // 1. คำนวณสาย (หลัง 08:30)
             if (item.timeIn && item.timeIn !== "-") {
                 if (item.timeIn > "08:30:00") {
-                    isLate = true;
+                    let inMins = timeToMinutes(item.timeIn);
+                    let baseInMins = (8 * 60) + 30; // 08:30 คิดเป็น 510 นาที
+                    let diffLate = inMins - baseInMins;
+                    
                     timeInHtml = `<span class="late">${item.timeIn}</span>`;
+                    lateMinutesText = `<span class="late">${diffLate}</span>`;
                     remark = `<span class="late">สาย</span>`;
+                }
+            }
+
+            // 2. คำนวณอยู่ต่อ (หลัง 16:30)
+            if (item.timeOut && item.timeOut !== "-") {
+                if (item.timeOut > "16:30:00") {
+                    let outMins = timeToMinutes(item.timeOut);
+                    let baseOutMins = (16 * 60) + 30; // 16:30 คิดเป็น 990 นาที
+                    let diffOver = outMins - baseOutMins;
+                    
+                    overMinutesText = `<span class="overtime">+${diffOver}</span>`;
                 }
             }
 
@@ -243,7 +270,9 @@
                 <td>${dayName}</td>
                 <td>${item.name}</td>
                 <td>${timeInHtml}</td>
+                <td>${lateMinutesText}</td>
                 <td>${item.timeOut}</td>
+                <td>${overMinutesText}</td>
                 <td>${remark}</td>
                 <td>${btnHtml}</td>
             `;
@@ -291,7 +320,6 @@
         document.getElementById('infoModal').style.display = "flex";
     }
 
-    // 🌟 นี่คือส่วนที่หายไปครับ (ฟังก์ชันปิดหน้าต่าง)
     function closeModal() {
         document.getElementById('infoModal').style.display = "none";
     }
