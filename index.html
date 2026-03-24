@@ -6,6 +6,10 @@
     <title>ระบบลงเวลาทำงาน</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         /* --- โซนที่ 1: ตกแต่งหน้าตา (CSS) --- */
         body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; background: #f4f7f6; display: flex; justify-content: center; color: #333; }
@@ -22,6 +26,7 @@
         
         /* ปุ่มแผนที่แบบเล็กพอดีหน้าจอ */
         .btn-map-small { background: #17a2b8; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-map-small:active { transform: scale(0.95); }
 
         .video-container { width: 100%; height: 250px; background: #000; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         video { width: 100%; height: 100%; object-fit: cover; }
@@ -46,10 +51,19 @@
         .progress-bar { width: 0%; height: 100%; background: #00B900; transition: 0.4s; }
         .hidden { display: none !important; }
         input[type="text"] { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; text-align: center; box-sizing: border-box;}
+
+        /* สไตล์ของ Popup แผนที่ */
+        .map-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        .map-modal-content { background-color: #fff; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease; }
+        .close-map-btn { position: absolute; right: 15px; top: 15px; color: #888; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
+        #map { height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; z-index: 1;}
+        .map-status { text-align: center; font-size: 14px; margin-top: 15px; font-weight: 500; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
 <canvas id="canvas" style="display:none;"></canvas>
+
 <div class="app-container">
     <div class="loader-overlay" id="loader">
         <div id="loader-icon" style="font-size:50px;">⏳</div>
@@ -91,6 +105,15 @@
     </div>
 </div>
 
+<div id="mapModal" class="map-modal" onclick="closeMapOutside(event)">
+    <div class="map-modal-content" onclick="event.stopPropagation()">
+        <span class="close-map-btn" onclick="closeMap()">&times;</span>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #00B900;">📍 ตรวจสอบพิกัด</h3>
+        <div id="map"></div>
+        <div id="mapStatus" class="map-status">กำลังค้นหาตำแหน่งของคุณ...</div>
+    </div>
+</div>
+
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
@@ -108,11 +131,82 @@
     }
     setInterval(updateClock, 1000);
 
-    // ฟังก์ชันไปหน้าแผนที่
+    // --- ส่วนของแผนที่ ---
+    let mapInstance;
+    let userMarker;
+    let targetCircle;
+
     function goToMap() {
-        if(registeredName) { localStorage.setItem('userName', registeredName); }
-        window.location.href = 'map.html';
+        // แสดง Popup แผนที่
+        const modal = document.getElementById("mapModal");
+        modal.style.display = "flex";
+        
+        const statusText = document.getElementById("mapStatus");
+        statusText.innerHTML = "กำลังค้นหาตำแหน่งของคุณ... ⏳";
+        statusText.style.color = "#666";
+
+        // สร้างแผนที่ถ้ายังไม่เคยสร้าง
+        if (!mapInstance) {
+            mapInstance = L.map('map').setView([OFFICE_LAT, OFFICE_LNG], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(mapInstance);
+
+            targetCircle = L.circle([OFFICE_LAT, OFFICE_LNG], {
+                color: '#00B900',
+                fillColor: '#00B900',
+                fillOpacity: 0.2,
+                radius: ALLOWED_RADIUS
+            }).addTo(mapInstance).bindPopup("พื้นที่ที่อนุญาตให้สแกน");
+        }
+
+        // แก้ไขปัญหาแผนที่โหลดไม่เต็มกรอบ
+        setTimeout(() => { mapInstance.invalidateSize(); }, 200);
+
+        // ดึงตำแหน่งปัจจุบันของผู้ใช้
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                mapInstance.setView([userLat, userLng], 17);
+
+                if (userMarker) {
+                    userMarker.setLatLng([userLat, userLng]);
+                } else {
+                    userMarker = L.marker([userLat, userLng]).addTo(mapInstance).bindPopup("คุณอยู่ที่นี่").openPopup();
+                }
+
+                // คำนวณระยะห่าง
+                const distance = calculateDistance(userLat, userLng, OFFICE_LAT, OFFICE_LNG);
+                if (distance <= ALLOWED_RADIUS) {
+                    statusText.innerHTML = `✅ คุณอยู่ในพื้นที่ (ห่าง ${Math.round(distance)} ม.)`;
+                    statusText.style.color = "#00B900";
+                } else {
+                    statusText.innerHTML = `❌ คุณอยู่นอกพื้นที่ (ห่าง ${Math.round(distance)} ม.)`;
+                    statusText.style.color = "#dc3545";
+                }
+            }, () => {
+                statusText.innerHTML = "⚠️ ไม่สามารถดึงตำแหน่งได้ กรุณาเปิด GPS";
+                statusText.style.color = "#dc3545";
+            }, { enableHighAccuracy: true });
+        } else {
+            statusText.innerHTML = "อุปกรณ์ของคุณไม่รองรับ GPS";
+            statusText.style.color = "#dc3545";
+        }
     }
+
+    function closeMap() {
+        document.getElementById("mapModal").style.display = "none";
+    }
+
+    function closeMapOutside(event) {
+        if (event.target === document.getElementById("mapModal")) {
+            closeMap();
+        }
+    }
+    // -------------------
 
     function showLoader(text, percent, icon="⏳") {
         document.getElementById('loader').style.display = 'flex';
