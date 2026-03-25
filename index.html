@@ -603,6 +603,7 @@
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
+
     async function processAttendance(type) {
         showLoader("ตรวจสอบพิกัด...", 20, "📍");
         navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -612,6 +613,7 @@
                 hideLoader();
                 return;
             }
+
             showLoader("ถ่ายภาพ...", 50, "📸");
             const canvas = document.getElementById('canvas');
             const video = document.getElementById('video');
@@ -673,9 +675,11 @@
             listDiv.innerHTML = html;
         } catch(e) { listDiv.innerHTML = '<p style="color:red; text-align:center; font-size:12px;">โหลดประวัติไม่สำเร็จ</p>'; }
     }
+
     function toggleHistory(index) {
         document.getElementById(`item-${index}`).classList.toggle('active');
     }
+
     async function register() {
         const name = document.getElementById('regName').value;
         if(!name) return alert("ใส่ชื่อด้วยครับ");
@@ -690,6 +694,7 @@
             location.reload();
         } catch(e) { alert("ผิดพลาด"); hideLoader(); }
     }
+
     initLiff();
 </script>
 </body>
@@ -705,6 +710,7 @@
             location.reload();
         } catch(e) { alert("ผิดพลาด"); hideLoader(); }
     }
+
     initLiff();
 </script>
 </body>
