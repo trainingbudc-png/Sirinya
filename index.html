@@ -11,49 +11,45 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* --- 1. จัดกึ่งกลางหน้าจอ (คอมพิวเตอร์และมือถือ) --- */
         body {
             font-family: 'Sarabun', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #e9ecef; /* พื้นหลังสีเทา */
-            display: flex; /* เปิดระบบ Flex จัดกลาง */
-            justify-content: center; /* กึ่งกลางแนวนอน */
-            align-items: center; /* กึ่งกลางแนวตั้ง */
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
             color: #333;
         }
 
-        /* --- 2. กรอบแอปพลิเคชัน (จำลองขนาดเท่ามือถือ) --- */
         .app-container {
             width: 100%;
-            max-width: 480px; /* ความกว้างมือถือ */
+            max-width: 480px;
             background: #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); /* เพิ่มเงาให้ดูมีมิติ */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             position: relative;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            min-height: 100vh; /* ในมือถือให้เต็มจอ */
+            min-height: 100vh;
         }
 
-        /* ปรับกรอบให้สวยงามเมื่อดูบนจอคอม */
         @media (min-width: 481px) {
             .app-container {
-                min-height: 90vh; /* ความสูงไม่ล้นจอ */
+                min-height: 90vh;
                 max-height: 90vh;
-                border-radius: 20px; /* มุมโค้ง */
-                overflow-y: auto; /* เลื่อนดูประวัติด้านล่างได้ */
+                border-radius: 20px;
+                overflow-y: auto;
             }
         }
 
-        /* --- 3. หน้าลงทะเบียน --- */
         #reg-form {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1; /* ให้เต็มความสูงของแอป */
+            flex: 1;
             padding: 20px;
             text-align: center;
         }
@@ -84,14 +80,13 @@
             font-family: 'Sarabun', sans-serif;
         }
 
-        /* --- 4. หน้าแอปหลัก (กล้อง, เวลา, ปุ่มลงเวลา) --- */
         #main-app {
             display: flex;
             flex-direction: column;
             flex: 1;
         }
         .header { background: #00B900; color: white; padding: 20px; text-align: center; }
-        @media (min-width: 481px) { .header { border-radius: 20px 20px 0 0; } } /* มุมโค้งด้านบนในคอม */
+        @media (min-width: 481px) { .header { border-radius: 20px 20px 0 0; } }
         .header h2 { margin: 0; font-weight: 500; font-size: 20px; }
         
         .content { padding: 20px; display: flex; flex-direction: column; flex: 1; }
@@ -101,11 +96,11 @@
         .clock { font-size: 30px; font-weight: 700; color: #00B900; line-height: 1.1; }
         .date { font-size: 13px; color: #666; margin-top: 4px; }
         
-        .btn-map-small { background: #17a2b8; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-map-small { background: #17a2b8; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%;}
         .btn-map-small:active { transform: scale(0.95); }
         
         .video-container { width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); } /* พลิกกล้องให้เป็นกระจกส่องหน้า */
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         
         .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
         .btn { flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: 500; color: white; font-family: 'Sarabun', sans-serif; cursor: pointer; transition: 0.2s; }
@@ -113,7 +108,6 @@
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
 
-        /* --- 5. ประวัติการลงเวลา --- */
         .history-section { text-align: left; margin-top: auto; border-top: 2px solid #eee; padding-top: 15px; padding-bottom: 10px; }
         .history-item { background: #f8f9fa; margin-bottom: 8px; border-radius: 10px; border-left: 5px solid #00B900; overflow: hidden; transition: 0.3s; }
         .history-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 14px; }
@@ -122,7 +116,6 @@
         .history-body { max-height: 0; padding: 0 15px; background: #fff; overflow: hidden; transition: max-height 0.3s ease-out; font-size: 14px; }
         .history-item.active .history-body { max-height: 120px; padding: 10px 15px; border-top: 1px solid #eee; }
 
-        /* --- 6. ระบบอื่นๆ (Loader, แผนที่, ซ่อน) --- */
         .hidden { display: none !important; }
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; display: none; }
         .progress-box { width: 80%; max-width: 300px; background: #e9ecef; border-radius: 10px; margin-top: 20px; height: 10px; overflow: hidden; }
@@ -131,7 +124,7 @@
         .map-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .map-modal-content { background-color: #fff; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease; }
         .close-map-btn { position: absolute; right: 15px; top: 15px; color: #888; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
-        #map { height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; z-index: 1;}
+        #map, #history-map { height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; z-index: 1;}
         .map-status { text-align: center; font-size: 14px; margin-top: 15px; font-weight: 500; }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
@@ -157,37 +150,63 @@
             <h2 id="welcomeMsg">ระบบบันทึกเวลา</h2>
         </div>
         <div class="content">
-           <div class="time-container">
+            <div class="time-container">
                 <div class="time-box">
                     <div class="clock" id="clock">00:00:00</div>
                     <div class="date" id="date">...</div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="btn-map-small" onclick="goToMap()">
-                        📍 <span>แผนที่</span>
-                    </button>
-                    <button class="btn-map-small" onclick="showAllHistoryMap()" style="background: #6f42c1;">
-                        🗺️ พิกัดทั้งหมด
-                    </button>
+                <div style="display: flex; flex-direction: column; gap: 8px; min-width: 100px;">
+                    <button class="btn-map-small" onclick="goToMap()">📍 <span>แผนที่</span></button>
+                    <button class="btn-map-small" onclick="showAllHistoryMap()" style="background: #6f42c1;">🗺️ พิกัดทั้งหมด</button>
                 </div>
             </div>
 
-<<div class="history-section">
+            <div class="video-container">
+                <video id="video" autoplay muted playsinline></video>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-in" onclick="processAttendance('in')">เข้างาน</button>
+                <button class="btn btn-out" onclick="processAttendance('out')">ออกงาน</button>
+            </div>
+
+            <div class="history-section">
                 <h3 style="margin:0 0 10px 0; font-size:16px;">ประวัติการลงเวลาล่าสุด</h3>
                 <div id="history-list-main"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="mapModal" class="map-modal" onclick="closeMapOutside(event)">
+    <div class="map-modal-content" onclick="event.stopPropagation()">
+        <span class="close-map-btn" onclick="closeMap()">×</span>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #00B900;">📍 ตรวจสอบพิกัด</h3>
+        <div id="map"></div>
+        <div id="mapStatus" class="map-status">กำลังค้นหาตำแหน่งของคุณ...</div>
+    </div>
+</div>
+
+<div id="historyMapModal" class="map-modal" onclick="closeHistoryMapOutside(event)">
+    <div class="map-modal-content" onclick="event.stopPropagation()">
+        <span class="close-map-btn" onclick="closeHistoryMap()">×</span>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #6f42c1;">🗺️ ประวัติพิกัดทั้งหมด</h3>
+        <div id="history-map"></div>
+    </div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
+    
+    // ตั้งค่าพิกัดออฟฟิศของคุณ
     const OFFICE_LAT = 16.80710722411132; 
     const OFFICE_LNG = 100.26354157452536; 
-    const ALLOWED_RADIUS = 30; // รัศมี 30 เมตร จะครอบคลุมพื้นที่ 1,487 ตรม. ของคุณพอดีครับ
+    const ALLOWED_RADIUS = 30; 
 
     let userProfile = {};
     let registeredName = "";
-    let historyDataList = []; // เพิ่มบรรทัดนี้เพื่อเก็บประวัติไว้ใช้กับแผนที่
+    let historyDataList = [];
 
     function updateClock() {
         const now = new Date();
@@ -196,6 +215,9 @@
     }
     setInterval(updateClock, 1000);
 
+    // ===================================
+    // แผนที่ 1: ตรวจสอบพิกัดปัจจุบัน
+    // ===================================
     let mapInstance;
     let userMarker;
     let targetCircle;
@@ -242,7 +264,11 @@
 
     function closeMap() { document.getElementById("mapModal").style.display = "none"; }
     function closeMapOutside(event) { if (event.target === document.getElementById("mapModal")) closeMap(); }
-let historyMapInstance;
+
+    // ===================================
+    // แผนที่ 2: ดูประวัติพิกัดทั้งหมด
+    // ===================================
+    let historyMapInstance;
 
     function showAllHistoryMap() {
         document.getElementById("historyMapModal").style.display = "flex";
@@ -253,30 +279,21 @@ let historyMapInstance;
             L.circle([OFFICE_LAT, OFFICE_LNG], { color: '#00B900', fillColor: '#00B900', fillOpacity: 0.2, radius: ALLOWED_RADIUS }).addTo(historyMapInstance).bindPopup("ออฟฟิศ");
         }
         
-        // รีเซ็ตแผนที่ให้แสดงผลถูกต้อง
         setTimeout(() => { historyMapInstance.invalidateSize(); }, 200);
 
-        // ลบหมุดเก่าออกก่อน (ถ้ามี)
         historyMapInstance.eachLayer((layer) => {
-            if (layer instanceof L.Marker) {
-                historyMapInstance.removeLayer(layer);
-            }
+            if (layer instanceof L.Marker) { historyMapInstance.removeLayer(layer); }
         });
 
-        // วนลูปเอาประวัติมาปักหมุด
         let bounds = [];
         historyDataList.forEach(h => {
-            // สมมติว่าหลังบ้านส่งลิงก์พิกัดมาชื่อ h.locationIn หรือ h.location (ต้องไปตั้งชื่อให้ตรงกับของจริง)
-            // โค้ดนี้จะสกัดเอาเส้นรุ้งเส้นแวงจากลิงก์ Google Maps ที่บันทึกไว้
-            if (h.location) { // <--- เช็คชื่อตัวแปรที่รับมาจาก Code.gs ให้ตรงด้วยนะครับ
+            if (h.location) { 
                 try {
                     let coordsStr = h.location.split('?q=')[1]; 
                     let lat = parseFloat(coordsStr.split(',')[0]);
                     let lng = parseFloat(coordsStr.split(',')[1]);
                     
-                    let markerColor = h.status === "เข้างาน" ? "green" : "red";
-                    
-                    let marker = L.marker([lat, lng]).addTo(historyMapInstance)
+                    L.marker([lat, lng]).addTo(historyMapInstance)
                         .bindPopup(`<b>วันที่:</b> ${h.date}<br><b>เวลา:</b> ${h.timeIn}<br><b>สถานะ:</b> ${h.status}`);
                     
                     bounds.push([lat, lng]);
@@ -284,15 +301,19 @@ let historyMapInstance;
             }
         });
 
-        // ซูมแผนที่ให้ครอบคลุมหมุดทั้งหมด
         if (bounds.length > 0) {
             historyMapInstance.fitBounds(bounds, { padding: [20, 20] });
+        } else {
+            historyMapInstance.setView([OFFICE_LAT, OFFICE_LNG], 15);
         }
     }
 
     function closeHistoryMap() { document.getElementById("historyMapModal").style.display = "none"; }
     function closeHistoryMapOutside(event) { if (event.target === document.getElementById("historyMapModal")) closeHistoryMap(); }
 
+    // ===================================
+    // ระบบหลัก (กล้อง, โหลด, เช็คอิน)
+    // ===================================
     function showLoader(text, percent, icon="⏳") {
         document.getElementById('loader').style.display = 'flex';
         document.getElementById('loader-text').innerText = text;
@@ -322,7 +343,7 @@ let historyMapInstance;
                 registeredName = result.name;
                 document.getElementById('welcomeMsg').innerText = "พนักงาน: " + registeredName;
                 document.getElementById('main-app').classList.remove('hidden');
-                startVideo();
+                startVideo(); // <--- เรียกเปิดกล้องตรงนี้ครับ
                 fetchHistory();
             } else {
                 document.getElementById('reg-form').classList.remove('hidden');
@@ -382,7 +403,8 @@ let historyMapInstance;
         try {
             const resp = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'history', name: registeredName }) });
             const data = await resp.json();
-	    historyDataList = data; // <--- เพิ่มบรรทัดนี้
+            historyDataList = data; // เก็บประวัติไว้ใช้กับแผนที่รวม
+            
             let html = '';
             if(!data || data.length === 0) {
                 listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">ยังไม่มีประวัติการลงเวลา</p>';
@@ -404,7 +426,6 @@ let historyMapInstance;
                         <div style="display:flex; justify-content:space-between;">
                             <span>❌ <b>ออก:</b></span> <span>${h.timeOut || '-'}</span>
                         </div>
-                        <div style="text-align:right; margin-top:5px; font-size:10px; color:blue;">(บันทึกสำเร็จแล้ว)</div>
                     </div>
                 </div>`;
             });
