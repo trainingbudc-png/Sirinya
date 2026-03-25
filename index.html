@@ -692,23 +692,8 @@
             });
             alert("ลงทะเบียนสำเร็จ");
             location.reload();
-        } catch(e) { alert("ผิดพลาด"); hideLoader(); }
-    }
-
-    initLiff();
-</script>
-</body>
-</html>
-        showLoader("บันทึก...", 50);
-        try {
-            await fetch(API_URL, {
-                method: 'POST',
-                redirect: 'follow',
-                body: JSON.stringify({ action: 'register', userId: userProfile.userId, name: name })
-            });
-            alert("ลงทะเบียนสำเร็จ");
-            location.reload();
-        } catch(e) { alert("ผิดพลาด"); hideLoader(); }
+         catch(e) { alert("ผิดพลาด"); hideLoader(); 
+	}
     }
 
     initLiff();
