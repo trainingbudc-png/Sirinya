@@ -173,31 +173,33 @@
             </div>
 
             <div class="history-section">
-                <h3 style="margin:0 0 10px 0; font-size:16px;">ประวัติการลงเวลาล่าสุด</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin:0; font-size:16px;">ประวัติการลงเวลาล่าสุด</h3>
+                    <button class="btn-map-small" onclick="showAllHistoryMap()" style="background: #6f42c1;">
+                        🗺️ พิกัดทั้งหมด
+                    </button>
+                </div>
                 <div id="history-list-main"></div>
             </div>
-        </div>
-    </div>
-</div>
 
-<div id="mapModal" class="map-modal" onclick="closeMapOutside(event)">
+<div id="historyMapModal" class="map-modal" onclick="closeHistoryMapOutside(event)">
     <div class="map-modal-content" onclick="event.stopPropagation()">
-        <span class="close-map-btn" onclick="closeMap()">×</span>
-        <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #00B900;">📍 ตรวจสอบพิกัด</h3>
-        <div id="map"></div>
-        <div id="mapStatus" class="map-status">กำลังค้นหาตำแหน่งของคุณ...</div>
+        <span class="close-map-btn" onclick="closeHistoryMap()">×</span>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #6f42c1;">🗺️ ประวัติพิกัดทั้งหมด</h3>
+        <div id="history-map" style="height: 350px; width: 100%; border-radius: 10px; border: 1px solid #ddd;"></div>
     </div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
-    const OFFICE_LAT = 16.8071155; 
-    const OFFICE_LNG = 100.2636339; 
-    const ALLOWED_RADIUS = 150; 
+    const OFFICE_LAT = 16.80710722411132; 
+    const OFFICE_LNG = 100.26354157452536; 
+    const ALLOWED_RADIUS = 30; // รัศมี 30 เมตร จะครอบคลุมพื้นที่ 1,487 ตรม. ของคุณพอดีครับ
 
     let userProfile = {};
     let registeredName = "";
+    let historyDataList = []; // เพิ่มบรรทัดนี้เพื่อเก็บประวัติไว้ใช้กับแผนที่
 
     function updateClock() {
         const now = new Date();
@@ -252,6 +254,56 @@
 
     function closeMap() { document.getElementById("mapModal").style.display = "none"; }
     function closeMapOutside(event) { if (event.target === document.getElementById("mapModal")) closeMap(); }
+let historyMapInstance;
+
+    function showAllHistoryMap() {
+        document.getElementById("historyMapModal").style.display = "flex";
+
+        if (!historyMapInstance) {
+            historyMapInstance = L.map('history-map').setView([OFFICE_LAT, OFFICE_LNG], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(historyMapInstance);
+            L.circle([OFFICE_LAT, OFFICE_LNG], { color: '#00B900', fillColor: '#00B900', fillOpacity: 0.2, radius: ALLOWED_RADIUS }).addTo(historyMapInstance).bindPopup("ออฟฟิศ");
+        }
+        
+        // รีเซ็ตแผนที่ให้แสดงผลถูกต้อง
+        setTimeout(() => { historyMapInstance.invalidateSize(); }, 200);
+
+        // ลบหมุดเก่าออกก่อน (ถ้ามี)
+        historyMapInstance.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+                historyMapInstance.removeLayer(layer);
+            }
+        });
+
+        // วนลูปเอาประวัติมาปักหมุด
+        let bounds = [];
+        historyDataList.forEach(h => {
+            // สมมติว่าหลังบ้านส่งลิงก์พิกัดมาชื่อ h.locationIn หรือ h.location (ต้องไปตั้งชื่อให้ตรงกับของจริง)
+            // โค้ดนี้จะสกัดเอาเส้นรุ้งเส้นแวงจากลิงก์ Google Maps ที่บันทึกไว้
+            if (h.location) { // <--- เช็คชื่อตัวแปรที่รับมาจาก Code.gs ให้ตรงด้วยนะครับ
+                try {
+                    let coordsStr = h.location.split('?q=')[1]; 
+                    let lat = parseFloat(coordsStr.split(',')[0]);
+                    let lng = parseFloat(coordsStr.split(',')[1]);
+                    
+                    let markerColor = h.status === "เข้างาน" ? "green" : "red";
+                    
+                    let marker = L.marker([lat, lng]).addTo(historyMapInstance)
+                        .bindPopup(`<b>วันที่:</b> ${h.date}<br><b>เวลา:</b> ${h.timeIn}<br><b>สถานะ:</b> ${h.status}`);
+                    
+                    bounds.push([lat, lng]);
+                } catch(e) {}
+            }
+        });
+
+        // ซูมแผนที่ให้ครอบคลุมหมุดทั้งหมด
+        if (bounds.length > 0) {
+            historyMapInstance.fitBounds(bounds, { padding: [20, 20] });
+        }
+    }
+
+    function closeHistoryMap() { document.getElementById("historyMapModal").style.display = "none"; }
+    function closeHistoryMapOutside(event) { if (event.target === document.getElementById("historyMapModal")) closeHistoryMap(); }
 
     function showLoader(text, percent, icon="⏳") {
         document.getElementById('loader').style.display = 'flex';
@@ -342,6 +394,7 @@
         try {
             const resp = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'history', name: registeredName }) });
             const data = await resp.json();
+	    historyDataList = data; // <--- เพิ่มบรรทัดนี้
             let html = '';
             if(!data || data.length === 0) {
                 listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">ยังไม่มีประวัติการลงเวลา</p>';
