@@ -108,7 +108,6 @@
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
         
-        /* สไตล์สำหรับปุ่มที่ถูกปิดการใช้งาน (กลายเป็นสีเทา) */
         .btn:disabled { 
             background: #b5b5b5 !important; 
             cursor: not-allowed; 
@@ -163,9 +162,14 @@
                     <div class="clock" id="clock">00:00:00</div>
                     <div class="date" id="date">...</div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 8px; min-width: 100px;">
-                    <button class="btn-map-small" onclick="goToMap()">📍 <span>แผนที่</span></button>
-                    <button class="btn-map-small" onclick="showAllHistoryMap()" style="background: #6f42c1;">🗺️ พิกัดทั้งหมด</button>
+                
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div id="location-status-icon" style="font-size: 26px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="สถานะตำแหน่ง">🔄</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; min-width: 100px;">
+                        <button class="btn-map-small" onclick="goToMap()">📍 <span>แผนที่</span></button>
+                        <button class="btn-map-small" onclick="showAllHistoryMap()" style="background: #6f42c1;">🗺️ พิกัดทั้งหมด</button>
+                    </div>
                 </div>
             </div>
 
@@ -222,6 +226,35 @@
         document.getElementById('date').innerText = now.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
     setInterval(updateClock, 1000);
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    }
+
+    // ===================================
+    // ระบบติดตามตำแหน่งแบบ Real-time (อัปเดต ✅ หรือ ❌)
+    // ===================================
+    function startLocationWatch() {
+        const iconEl = document.getElementById('location-status-icon');
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition((position) => {
+                const dist = calculateDistance(position.coords.latitude, position.coords.longitude, OFFICE_LAT, OFFICE_LNG);
+                if (dist <= ALLOWED_RADIUS) {
+                    iconEl.innerHTML = "✅"; // อยู่ในขอบเขต
+                } else {
+                    iconEl.innerHTML = "❌"; // อยู่นอกขอบเขต
+                }
+            }, (error) => {
+                iconEl.innerHTML = "⚠️"; // หาพิกัดไม่ได้ หรือไม่ได้เปิด GPS
+            }, { enableHighAccuracy: true });
+        } else {
+            iconEl.innerHTML = "⚠️";
+        }
+    }
 
     // ===================================
     // แผนที่ 1: ตรวจสอบพิกัดปัจจุบัน
@@ -326,38 +359,29 @@
         const btnIn = document.getElementById('btn-in-id');
         const btnOut = document.getElementById('btn-out-id');
 
-        // หาวันที่ปัจจุบัน (ให้ Format ตรงกับใน Google Sheet)
         const d = new Date();
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear(); 
         const todayStr = `${day}/${month}/${year}`;
 
-        // ค่าเริ่มต้นเมื่อเป็นวันใหม่ (เข้างานกดได้ ออกงานกดไม่ได้)
         let canIn = true;
         let canOut = false;
 
-        // เช็คประวัติล่าสุด (index 0 คือข้อมูลใหม่สุด)
         if (historyData && historyData.length > 0) {
             const latest = historyData[0];
-            
-            // ถ้าข้อมูลล่าสุดเป็นของ "วันนี้"
             if (latest.date === todayStr) {
                 if (latest.timeOut === "-" || latest.timeOut === "") {
-                    // ถ้าเวลาออกยังว่างเปล่า = เข้างานแล้ว แต่ยังไม่ออก
                     canIn = false;
                     canOut = true;
                 } else {
-                    // ถ้าเวลาออกมีข้อมูลแล้ว = สแกนเข้าและออกครบแล้วของวันนี้
                     canIn = false;
                     canOut = false;
                 }
             }
         }
 
-        // อัปเดตสถานะปุ่มเข้างาน
         btnIn.disabled = !canIn;
-        // อัปเดตสถานะปุ่มออกงาน
         btnOut.disabled = !canOut;
     }
 
@@ -393,8 +417,10 @@
                 registeredName = result.name;
                 document.getElementById('welcomeMsg').innerText = "พนักงาน: " + registeredName;
                 document.getElementById('main-app').classList.remove('hidden');
+                
                 startVideo();
-                fetchHistory(); // ดึงประวัติและเช็คปุ่ม
+                startLocationWatch(); // <--- เริ่มทำงานระบบติดตามพิกัดเรียลไทม์
+                fetchHistory(); 
             } else {
                 document.getElementById('reg-form').classList.remove('hidden');
             }
@@ -405,14 +431,6 @@
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
             .then(stream => { document.getElementById('video').srcObject = stream; })
             .catch(err => alert("กรุณาเปิดกล้อง"));
-    }
-
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
 
     async function processAttendance(type) {
@@ -454,8 +472,8 @@
             const resp = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'history', name: registeredName }) });
             const data = await resp.json();
             
-            historyDataList = data; // เก็บข้อมูลไปใช้กับแผนที่
-            updateButtonStates(data); // เรียกใช้ฟังก์ชันเช็คปุ่มที่เราเพิ่งสร้าง
+            historyDataList = data; 
+            updateButtonStates(data); 
 
             let html = '';
             if(!data || data.length === 0) {
