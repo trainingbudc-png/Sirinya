@@ -11,17 +11,16 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* --- โซนตกแต่งหน้าตา (CSS) --- */
-body { 
+     /* --- 1. ปรับ Body ให้เป็นหน้ากระดาษธรรมดา (ห้ามมี display: flex เด็ดขาด) --- */
+        body { 
             font-family: 'Sarabun', sans-serif; 
             margin: 0; 
             padding: 0; 
             background: #e9ecef; 
             color: #333; 
-            /* ลบ display: flex; และคำสั่งจัดกลางอื่นๆ ในนี้ออกให้หมดครับ */
         }
 
-        /* --- 2. กรอบแอปพลิเคชัน --- */
+        /* --- 2. กล่องแอปพลิเคชันหลัก ให้บังคับอยู่ตรงกลางจอ --- */
         .app-container { 
             width: 100%; 
             max-width: 480px; 
@@ -32,48 +31,30 @@ body {
             overflow-x: hidden; 
             display: flex;
             flex-direction: column;
-            margin: 0 auto; /* พระเอกตัวจริง! บังคับให้แอปมาอยู่กึ่งกลางจอเดี่ยวๆ */
+            margin: 0 auto; /* ตัวนี้คือพระเอกที่ทำให้กล่องอยู่ตรงกลางเป๊ะๆ */
         }
 
-        /* สำหรับจอคอม ให้แอปดูเป็นกรอบสวยๆ */
+ /* --- 3. กล่องลงทะเบียน (เมื่ออยู่ข้างใน app-container) --- */
+        #reg-form {
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; /* ดันเนื้อหาให้อยู่ตรงกลางแนวตั้ง */
+            align-items: center; /* ดันเนื้อหาให้อยู่ตรงกลางแนวนอน */
+            flex: 1; /* ให้ยืดเต็มพื้นที่ว่างของกล่อง app-container */
+            padding: 20px;
+            box-sizing: border-box;
+            /* ลบ margin, box-shadow, min-height 100vh ออก เพราะกล่องแม่จัดการให้แล้ว */
+        }
+
+       /* สำหรับหน้าจอคอมพิวเตอร์ ให้มันดูลอยเป็นกรอบสวยๆ */
         @media (min-width: 481px) {
             .app-container {
                 min-height: 90vh; 
                 border-radius: 20px; 
-                margin-top: 5vh; /* ดันลงมาจากขอบจอบน 5% ให้ดูสวยงาม */
+                margin-top: 5vh; 
                 margin-bottom: 5vh;
-            
-        }
-
-        /* ลูกเล่นพิเศษ: ถ้าเปิดบนจอคอม/แท็บเล็ต ให้จำลองเป็นกรอบมือถือลอยอยู่ตรงกลาง */
-        @media (min-width: 481px) {
-            .app-container {
-                min-height: 90vh; /* ลดความสูงลงนิดนึง ให้เห็นว่าอยู่ตรงกลางแนวตั้ง */
-                border-radius: 20px; /* ขอบมนสวยๆ */
             }
         }
-
-        /* --- 3. หน้าลงทะเบียนให้อยู่ตรงกลางเป๊ะ --- */
-        #reg-form {
-            display: flex;
-            flex-direction: column;
-            justify-content: center; /* กลางแนวตั้ง */
-            align-items: center; /* กลางแนวนอน */
-            height: 100vh; /* ความสูงเต็มกรอบ */
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        #reg-form h2 { margin-bottom: 20px; color: #007bff; }
-        #reg-form input {
-            width: 100%; max-width: 320px; padding: 15px; 
-            border: 1px solid #ddd; border-radius: 10px; 
-            margin-bottom: 15px; text-align: center; font-size: 16px; font-family: 'Sarabun';
-        }
-        #reg-form button {
-            width: 100%; max-width: 320px; background: #007bff; color: white; 
-            padding: 15px; border-radius: 10px; border: none; font-size: 18px; font-family: 'Sarabun'; cursor: pointer;
-        }
-
         /* --- 4. โค้ดส่วนอื่นๆ (หน้าสแกน, แผนที่, ประวัติ) --- */
         .header { background: #00B900; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
         .header h2 { margin: 0; font-weight: 500; font-size: 22px; }
