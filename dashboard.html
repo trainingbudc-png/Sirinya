@@ -26,6 +26,8 @@
         
         .late { color: red; font-weight: bold; } 
         .overtime { color: #0056b3; font-weight: bold; }
+        .early { color: #ff8c00; font-weight: bold; } /* เพิ่มสีสำหรับคนออกก่อนเวลา */
+        
         .btn-view { background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
         .btn-view:hover { background: #138496; }
 
@@ -74,7 +76,7 @@
                 <th>เวลาเข้างาน</th>
                 <th>สาย (นาที)</th>
                 <th>เวลาออกงาน</th>
-                <th>อยู่ต่อ (นาที)</th>
+                <th>อยู่ต่อ/ออกก่อน</th>
                 <th>หมายเหตุ</th>
                 <th>ดูข้อมูล</th>
             </tr>
@@ -232,31 +234,52 @@
             if(d) { dayName = dayNames[d.getDay()]; }
 
             let timeInHtml = item.timeIn;
-            let remark = "ปกติ";
+            let remark = "-";
             let lateMinutesText = "-";
             let overMinutesText = "-";
 
-            // 1. คำนวณสาย (หลัง 08:30)
+            // 1. คำนวณเวลาเข้างาน (08:30)
             if (item.timeIn && item.timeIn !== "-") {
-                if (item.timeIn > "08:30:00") {
-                    let inMins = timeToMinutes(item.timeIn);
-                    let baseInMins = (8 * 60) + 30; // 08:30 คิดเป็น 510 นาที
+                let inMins = timeToMinutes(item.timeIn);
+                let baseInMins = (8 * 60) + 30; // 08:30 คิดเป็น 510 นาที
+
+                if (inMins > baseInMins) {
+                    // กรณีมาสาย
                     let diffLate = inMins - baseInMins;
-                    
                     timeInHtml = `<span class="late">${item.timeIn}</span>`;
                     lateMinutesText = `<span class="late">${diffLate}</span>`;
                     remark = `<span class="late">สาย</span>`;
+                } else {
+                    // กรณีมาปกติ
+                    timeInHtml = `<span>${item.timeIn}</span>`;
+                    remark = `<span>ไม่สาย</span>`;
                 }
             }
 
-            // 2. คำนวณอยู่ต่อ (หลัง 16:30)
+            // 2. คำนวณเวลาออกงาน (16:30)
             if (item.timeOut && item.timeOut !== "-") {
-                if (item.timeOut > "16:30:00") {
-                    let outMins = timeToMinutes(item.timeOut);
-                    let baseOutMins = (16 * 60) + 30; // 16:30 คิดเป็น 990 นาที
+                let outMins = timeToMinutes(item.timeOut);
+                let baseOutMins = (16 * 60) + 30; // 16:30 คิดเป็น 990 นาที
+
+                if (outMins > baseOutMins) {
+                    // กรณีอยู่ต่อ (หลัง 16:30) เป็นสีปกติ
                     let diffOver = outMins - baseOutMins;
+                    overMinutesText = `<span>+${diffOver}</span>`; 
                     
-                    overMinutesText = `<span class="overtime">+${diffOver}</span>`;
+                } else if (outMins < baseOutMins) {
+                    // กรณีออกก่อนเวลา (ก่อน 16:30)
+                    let diffEarly = baseOutMins - outMins;
+                    overMinutesText = `<span class="early">ออกก่อน ${diffEarly} นาที</span>`;
+                    
+                    // อัปเดต remark ให้รู้ว่าออกก่อนเวลาด้วย
+                    if (remark !== "-") {
+                         remark += `, <span class="early">ออกก่อนเวลา</span>`;
+                    } else {
+                         remark = `<span class="early">ออกก่อนเวลา</span>`;
+                    }
+                } else {
+                    // กรณีออกพอดีเวลาเป๊ะ (16:30)
+                    overMinutesText = `-`;
                 }
             }
 
