@@ -12,46 +12,66 @@
 
     <style>
         /* --- โซนตกแต่งหน้าตา (CSS) --- */
-    /* --- ตั้งค่าพื้นหลังเว็บให้สีเทาอ่อน เพื่อให้กรอบแอปดูโดดเด่นบนคอม --- */
+  /* --- 1. บังคับให้ทุกอย่างอยู่ตรงกลางจอ (ทั้งคอมและมือถือ) --- */
         body { 
             font-family: 'Sarabun', sans-serif; 
             margin: 0; 
             padding: 0; 
             background: #e9ecef; 
             color: #333; 
+            display: flex; 
+            justify-content: center; /* จัดกึ่งกลางแนวนอน */
+            align-items: flex-start; /* ให้เนื้อหาเริ่มจากขอบบน (เพื่อเวลาเลื่อนจอจะได้ไม่บั๊ก) */
+            min-height: 100vh; 
         }
 
-        /* --- จัดกรอบแอปพลิเคชันให้อยู่ตรงกลาง และพอดีกับมือถือ --- */
+        /* --- 2. กรอบแอปพลิเคชัน (จำลองหน้าจอมือถือ) --- */
         .app-container { 
             width: 100%; 
-            max-width: 480px; /* ขนาดความกว้างมาตรฐานของมือถือ */
-            min-height: 100vh; /* สูงเต็มจอพอดี */
+            max-width: 480px; /* ขนาดจำลองมือถือ */
+            min-height: 100vh; 
             background: #fff; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.1); /* เพิ่มเงาให้ดูเป็นมิติ */
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); 
             position: relative; 
             overflow-x: hidden; 
-            padding-bottom: 20px;
-            margin: 0 auto; /* พระเอก! บังคับให้อยู่กึ่งกลางจอคอมพิวเตอร์ */
             display: flex;
             flex-direction: column;
+            box-sizing: border-box; /* สำคัญมาก ป้องกันขอบล้นจอ */
         }
 
-        /* --- จัดหน้าลงทะเบียนให้อยู่กึ่งกลางเป๊ะๆ --- */
+        /* --- 3. กล้องวิดีโอ (ปรับใหม่ให้พอดีกับหน้าจอมือถือทุกรุ่น) --- */
+        .video-container { 
+            width: 100%; 
+            aspect-ratio: 4 / 3; /* ใช้สัดส่วนแทนการกำหนดความสูงตายตัว */
+            background: #000; 
+            border-radius: 15px; 
+            overflow: hidden; 
+            position: relative; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+        }
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+
+        /* --- 4. จัดฟอร์มลงทะเบียนให้อยู่ตรงกลางของแอป --- */
         #reg-form {
             display: flex;
             flex-direction: column;
-            justify-content: center; /* กึ่งกลางแนวตั้ง */
-            align-items: center; /* กึ่งกลางแนวนอน */
-            min-height: 100vh;
+            justify-content: center; 
+            align-items: center; 
+            flex: 1; /* ดันให้อยู่ตรงกลางของความสูงแอป */
             padding: 20px;
             box-sizing: border-box;
+            min-height: 100vh;
         }
 
-        /* --- ตกแต่งช่องกรอกชื่อและปุ่มลงทะเบียน --- */
         #reg-form h2 { margin-bottom: 20px; color: #00B900; }
         #reg-form input[type="text"] {
             width: 100%;
-            max-width: 320px;
+            max-width: 350px;
             padding: 15px;
             border: 2px solid #ddd;
             border-radius: 10px;
@@ -67,12 +87,15 @@
         }
         #reg-form button {
             width: 100%;
-            max-width: 320px;
+            max-width: 350px;
             background: #00B900;
             color: white;
             font-size: 18px;
             border-radius: 10px;
             padding: 15px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Sarabun', sans-serif;
         }
         
         /* โซนเวลา และ ปุ่มแผนที่ (จัดให้อยู่คู่กัน) */
