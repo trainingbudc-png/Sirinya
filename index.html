@@ -157,37 +157,25 @@
             <h2 id="welcomeMsg">ระบบบันทึกเวลา</h2>
         </div>
         <div class="content">
-            <div class="time-container">
+           <div class="time-container">
                 <div class="time-box">
                     <div class="clock" id="clock">00:00:00</div>
                     <div class="date" id="date">...</div>
                 </div>
-                <button class="btn-map-small" onclick="goToMap()">📍 <span>แผนที่</span></button>
-            </div>
-
-            <div class="video-container"><video id="video" autoplay muted playsinline></video></div>
-            
-            <div class="btn-group">
-                <button class="btn btn-in" onclick="processAttendance('in')">เข้างาน</button>
-                <button class="btn btn-out" onclick="processAttendance('out')">ออกงาน</button>
-            </div>
-
-            <div class="history-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3 style="margin:0; font-size:16px;">ประวัติการลงเวลาล่าสุด</h3>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn-map-small" onclick="goToMap()">
+                        📍 <span>แผนที่</span>
+                    </button>
                     <button class="btn-map-small" onclick="showAllHistoryMap()" style="background: #6f42c1;">
                         🗺️ พิกัดทั้งหมด
                     </button>
                 </div>
-                <div id="history-list-main"></div>
             </div>
 
-<div id="historyMapModal" class="map-modal" onclick="closeHistoryMapOutside(event)">
-    <div class="map-modal-content" onclick="event.stopPropagation()">
-        <span class="close-map-btn" onclick="closeHistoryMap()">×</span>
-        <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #6f42c1;">🗺️ ประวัติพิกัดทั้งหมด</h3>
-        <div id="history-map" style="height: 350px; width: 100%; border-radius: 10px; border: 1px solid #ddd;"></div>
-    </div>
+<<div class="history-section">
+                <h3 style="margin:0 0 10px 0; font-size:16px;">ประวัติการลงเวลาล่าสุด</h3>
+                <div id="history-list-main"></div>
+            </div>
 </div>
 
 <script>
