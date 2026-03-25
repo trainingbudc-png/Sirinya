@@ -12,30 +12,37 @@
 
     <style>
         /* --- โซนตกแต่งหน้าตา (CSS) --- */
-/* --- 1. บังคับพื้นหลังให้อยู่กึ่งกลางเป๊ะๆ ทั้งแนวตั้งและแนวนอน --- */
-        body { 
+body { 
             font-family: 'Sarabun', sans-serif; 
             margin: 0; 
             padding: 0; 
             background: #e9ecef; 
-            display: flex; 
-            justify-content: center; /* ตรงกลางแนวนอน */
-            align-items: center; /* ตรงกลางแนวตั้ง */
-            min-height: 100vh; 
             color: #333; 
+            /* ลบ display: flex; และคำสั่งจัดกลางอื่นๆ ในนี้ออกให้หมดครับ */
         }
 
         /* --- 2. กรอบแอปพลิเคชัน --- */
         .app-container { 
             width: 100%; 
             max-width: 480px; 
-            min-height: 100vh; /* ในมือถือให้เต็มจอ */
+            min-height: 100vh; 
             background: #fff; 
             box-shadow: 0 0 20px rgba(0,0,0,0.15); 
             position: relative; 
             overflow-x: hidden; 
             display: flex;
             flex-direction: column;
+            margin: 0 auto; /* พระเอกตัวจริง! บังคับให้แอปมาอยู่กึ่งกลางจอเดี่ยวๆ */
+        }
+
+        /* สำหรับจอคอม ให้แอปดูเป็นกรอบสวยๆ */
+        @media (min-width: 481px) {
+            .app-container {
+                min-height: 90vh; 
+                border-radius: 20px; 
+                margin-top: 5vh; /* ดันลงมาจากขอบจอบน 5% ให้ดูสวยงาม */
+                margin-bottom: 5vh;
+            
         }
 
         /* ลูกเล่นพิเศษ: ถ้าเปิดบนจอคอม/แท็บเล็ต ให้จำลองเป็นกรอบมือถือลอยอยู่ตรงกลาง */
