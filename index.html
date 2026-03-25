@@ -107,6 +107,14 @@
         .btn:active { transform: scale(0.95); }
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
+        
+        /* สไตล์สำหรับปุ่มที่ถูกปิดการใช้งาน (กลายเป็นสีเทา) */
+        .btn:disabled { 
+            background: #b5b5b5 !important; 
+            cursor: not-allowed; 
+            transform: none !important; 
+            box-shadow: none !important; 
+        }
 
         .history-section { text-align: left; margin-top: auto; border-top: 2px solid #eee; padding-top: 15px; padding-bottom: 10px; }
         .history-item { background: #f8f9fa; margin-bottom: 8px; border-radius: 10px; border-left: 5px solid #00B900; overflow: hidden; transition: 0.3s; }
@@ -166,8 +174,8 @@
             </div>
             
             <div class="btn-group">
-                <button class="btn btn-in" onclick="processAttendance('in')">เข้างาน</button>
-                <button class="btn btn-out" onclick="processAttendance('out')">ออกงาน</button>
+                <button class="btn btn-in" id="btn-in-id" onclick="processAttendance('in')">เข้างาน</button>
+                <button class="btn btn-out" id="btn-out-id" onclick="processAttendance('out')" disabled>ออกงาน</button>
             </div>
 
             <div class="history-section">
@@ -312,6 +320,48 @@
     function closeHistoryMapOutside(event) { if (event.target === document.getElementById("historyMapModal")) closeHistoryMap(); }
 
     // ===================================
+    // ฟังก์ชันจัดการปุ่มกดแบบวันต่อวัน
+    // ===================================
+    function updateButtonStates(historyData) {
+        const btnIn = document.getElementById('btn-in-id');
+        const btnOut = document.getElementById('btn-out-id');
+
+        // หาวันที่ปัจจุบัน (ให้ Format ตรงกับใน Google Sheet)
+        const d = new Date();
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear(); 
+        const todayStr = `${day}/${month}/${year}`;
+
+        // ค่าเริ่มต้นเมื่อเป็นวันใหม่ (เข้างานกดได้ ออกงานกดไม่ได้)
+        let canIn = true;
+        let canOut = false;
+
+        // เช็คประวัติล่าสุด (index 0 คือข้อมูลใหม่สุด)
+        if (historyData && historyData.length > 0) {
+            const latest = historyData[0];
+            
+            // ถ้าข้อมูลล่าสุดเป็นของ "วันนี้"
+            if (latest.date === todayStr) {
+                if (latest.timeOut === "-" || latest.timeOut === "") {
+                    // ถ้าเวลาออกยังว่างเปล่า = เข้างานแล้ว แต่ยังไม่ออก
+                    canIn = false;
+                    canOut = true;
+                } else {
+                    // ถ้าเวลาออกมีข้อมูลแล้ว = สแกนเข้าและออกครบแล้วของวันนี้
+                    canIn = false;
+                    canOut = false;
+                }
+            }
+        }
+
+        // อัปเดตสถานะปุ่มเข้างาน
+        btnIn.disabled = !canIn;
+        // อัปเดตสถานะปุ่มออกงาน
+        btnOut.disabled = !canOut;
+    }
+
+    // ===================================
     // ระบบหลัก (กล้อง, โหลด, เช็คอิน)
     // ===================================
     function showLoader(text, percent, icon="⏳") {
@@ -343,8 +393,8 @@
                 registeredName = result.name;
                 document.getElementById('welcomeMsg').innerText = "พนักงาน: " + registeredName;
                 document.getElementById('main-app').classList.remove('hidden');
-                startVideo(); // <--- เรียกเปิดกล้องตรงนี้ครับ
-                fetchHistory();
+                startVideo();
+                fetchHistory(); // ดึงประวัติและเช็คปุ่ม
             } else {
                 document.getElementById('reg-form').classList.remove('hidden');
             }
@@ -403,8 +453,10 @@
         try {
             const resp = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'history', name: registeredName }) });
             const data = await resp.json();
-            historyDataList = data; // เก็บประวัติไว้ใช้กับแผนที่รวม
             
+            historyDataList = data; // เก็บข้อมูลไปใช้กับแผนที่
+            updateButtonStates(data); // เรียกใช้ฟังก์ชันเช็คปุ่มที่เราเพิ่งสร้าง
+
             let html = '';
             if(!data || data.length === 0) {
                 listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">ยังไม่มีประวัติการลงเวลา</p>';
