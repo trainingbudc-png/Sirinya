@@ -11,28 +11,22 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        /* --- โซนตกแต่งหน้าตา (CSS) --- */
         body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; background: #f4f7f6; display: flex; justify-content: center; color: #333; }
         .app-container { width: 100%; max-width: 480px; min-height: 100vh; background: #fff; box-shadow: 0 0 15px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; padding-bottom: 20px;}
         .header { background: #00B900; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
         .header h2 { margin: 0; font-weight: 500; font-size: 22px; }
         .content { padding: 20px; text-align: center; }
         
-        .time-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 15px; border: 1px solid #eee; }
+        /* โซนเวลา และ ปุ่มแผนที่ (จัดให้อยู่คู่กัน) */
+        .time-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fdfdfd; padding: 10px; border-radius: 15px; border: 1px solid #eee; }
         .time-box { text-align: left; }
         .clock { font-size: 32px; font-weight: 700; color: #00B900; line-height: 1; }
         .date { font-size: 14px; color: #666; }
         
+        /* ปุ่มแผนที่แบบเล็กพอดีหน้าจอ */
         .btn-map-small { background: #17a2b8; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-map-small:active { transform: scale(0.95); }
-
-        .location-card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 15px; padding: 12px; margin-bottom: 20px; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; text-align: left; }
-        .loc-item { background: #f4f7f6; padding: 8px; border-radius: 8px; }
-        .loc-item b { color: #555; }
-        .status-container { text-align: center; padding-top: 10px; border-top: 1px dashed #ccc; font-weight: bold; font-size: 14px; }
-        .status-in { color: #00B900; } 
-        .status-out { color: #dc3545; } 
-        .status-wait { color: #f39c12; }
 
         .video-container { width: 100%; height: 250px; background: #000; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         video { width: 100%; height: 100%; object-fit: cover; }
@@ -42,6 +36,7 @@
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
 
+        /* สไตล์ประวัติแบบยืด-หดได้ (Accordion) */
         .history-section { text-align: left; padding: 0 20px; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
         .history-item { background: #f8f9fa; margin-bottom: 8px; border-radius: 10px; border-left: 5px solid #00B900; overflow: hidden; transition: 0.3s; }
         .history-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 14px; }
@@ -50,12 +45,358 @@
         .history-body { max-height: 0; padding: 0 15px; background: #fff; overflow: hidden; transition: max-height 0.3s ease-out; font-size: 14px; }
         .history-item.active .history-body { max-height: 120px; padding: 10px 15px; border-top: 1px solid #eee; }
 
+        /* Loader */
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; display: none; }
         .progress-box { width: 80%; background: #e9ecef; border-radius: 10px; margin-top: 20px; height: 10px; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: #00B900; transition: 0.4s; }
         .hidden { display: none !important; }
         input[type="text"] { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; text-align: center; box-sizing: border-box;}
 
+        /* สไตล์ของ Popup แผนที่ */
+        .map-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        .map-modal-content { background-color: #fff; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease; }
+        .close-map-btn { position: absolute; right: 15px; top: 15px; color: #888; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
+        #map { height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; z-index: 1;}
+        .map-status { text-align: center; font-size: 14px; margin-top: 15px; font-weight: 500; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<div class="app-container">
+    <div class="loader-overlay" id="loader">
+        <div id="loader-icon" style="font-size:50px;">⏳</div>
+        <div id="loader-text" style="margin-top:10px;">กำลังโหลด...</div>
+        <div class="progress-box"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+
+    <div id="reg-form" class="content hidden">
+        <h2 style="color: #007bff;">ลงทะเบียน</h2>
+        <input type="text" id="regName" placeholder="ระบุ ชื่อ-นามสกุล">
+        <button class="btn" style="background:#007bff; width:100%;" onclick="register()">ลงทะเบียน</button>
+    </div>
+
+    <div id="main-app" class="hidden">
+        <div class="header">
+            <h2 id="welcomeMsg">ระบบบันทึกเวลา</h2>
+        </div>
+        <div class="content">
+            
+            <div class="time-container">
+                <div class="time-box">
+                    <div class="clock" id="clock">00:00:00</div>
+                    <div class="date" id="date">...</div>
+                </div>
+                <button class="btn-map-small" onclick="goToMap()">
+                    📍 <span>แผนที่</span>
+                </button>
+            </div>
+
+            <div class="video-container"><video id="video" autoplay muted playsinline></video></div>
+            <div class="btn-group">
+                <button class="btn btn-in" onclick="processAttendance('in')">เข้างาน</button>
+                <button class="btn btn-out" onclick="processAttendance('out')">ออกงาน</button>
+            </div>
+        </div>
+        <div class="history-section">
+            <h3 style="margin:0 0 10px 0; font-size:18px;">ประวัติการลงเวลาล่าสุด</h3>
+            <div id="history-list-main"></div>
+        </div>
+    </div>
+</div>
+
+<div id="mapModal" class="map-modal" onclick="closeMapOutside(event)">
+    <div class="map-modal-content" onclick="event.stopPropagation()">
+        <span class="close-map-btn" onclick="closeMap()">×</span>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #00B900;">📍 ตรวจสอบพิกัด</h3>
+        <div id="map"></div>
+        <div id="mapStatus" class="map-status">กำลังค้นหาตำแหน่งของคุณ...</div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec"; 
+    const LIFF_ID = "2009502922-k1zdFCRh"; 
+    const OFFICE_LAT = 16.8071155; 
+    const OFFICE_LNG = 100.2636339; 
+    const ALLOWED_RADIUS = 150; 
+
+    let userProfile = {};
+    let registeredName = "";
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString('th-TH', { hour12: false });
+        document.getElementById('date').innerText = now.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+
+    // --- ส่วนของการจัดการแผนที่ ---
+    let mapInstance;
+    let userMarker;
+    let targetCircle;
+
+    function goToMap() {
+        // แสดง Popup แผนที่
+        const modal = document.getElementById("mapModal");
+        modal.style.display = "flex";
+        
+        const statusText = document.getElementById("mapStatus");
+        statusText.innerHTML = "กำลังค้นหาตำแหน่งของคุณ... ⏳";
+        statusText.style.color = "#666";
+
+        // สร้างแผนที่ถ้ายังไม่เคยสร้าง
+        if (!mapInstance) {
+            mapInstance = L.map('map').setView([OFFICE_LAT, OFFICE_LNG], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(mapInstance);
+
+            targetCircle = L.circle([OFFICE_LAT, OFFICE_LNG], {
+                color: '#00B900',
+                fillColor: '#00B900',
+                fillOpacity: 0.2,
+                radius: ALLOWED_RADIUS
+            }).addTo(mapInstance).bindPopup("พื้นที่ที่อนุญาตให้สแกน");
+        }
+
+        // แก้ไขปัญหาแผนที่โหลดไม่เต็มกรอบ
+        setTimeout(() => { mapInstance.invalidateSize(); }, 200);
+
+        // ดึงตำแหน่งปัจจุบันของผู้ใช้
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                mapInstance.setView([userLat, userLng], 17);
+
+                if (userMarker) {
+                    userMarker.setLatLng([userLat, userLng]);
+                } else {
+                    userMarker = L.marker([userLat, userLng]).addTo(mapInstance).bindPopup("คุณอยู่ที่นี่").openPopup();
+                }
+
+                // คำนวณระยะห่าง
+                const distance = calculateDistance(userLat, userLng, OFFICE_LAT, OFFICE_LNG);
+                if (distance <= ALLOWED_RADIUS) {
+                    statusText.innerHTML = `✅ คุณอยู่ในพื้นที่ (ห่าง ${Math.round(distance)} ม.)`;
+                    statusText.style.color = "#00B900";
+                } else {
+                    statusText.innerHTML = `❌ คุณอยู่นอกพื้นที่ (ห่าง ${Math.round(distance)} ม.)`;
+                    statusText.style.color = "#dc3545";
+                }
+            }, () => {
+                statusText.innerHTML = "⚠️ ไม่สามารถดึงตำแหน่งได้ กรุณาเปิด GPS";
+                statusText.style.color = "#dc3545";
+            }, { enableHighAccuracy: true });
+        } else {
+            statusText.innerHTML = "อุปกรณ์ของคุณไม่รองรับ GPS";
+            statusText.style.color = "#dc3545";
+        }
+    }
+
+    function closeMap() {
+        document.getElementById("mapModal").style.display = "none";
+    }
+
+    function closeMapOutside(event) {
+        if (event.target === document.getElementById("mapModal")) {
+            closeMap();
+        }
+    }
+    // -------------------
+
+    function showLoader(text, percent, icon="⏳") {
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('loader-text').innerText = text;
+        document.getElementById('loader-icon').innerText = icon;
+        document.getElementById('progress-bar').style.width = percent + '%';
+    }
+
+    function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+    async function initLiff() {
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); } 
+            else {
+                userProfile = await liff.getProfile();
+                checkRegistration();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function checkRegistration() {
+        showLoader("กำลังตรวจสอบ...", 50);
+        try {
+            const resp = await fetch(`${API_URL}?userId=${userProfile.userId}`, { method: 'GET', redirect: 'follow' });
+            const result = await resp.json();
+            hideLoader();
+            if (result.isRegistered) {
+                registeredName = result.name;
+                document.getElementById('welcomeMsg').innerText = "พนักงาน: " + registeredName;
+                document.getElementById('main-app').classList.remove('hidden');
+                startVideo();
+                fetchHistory();
+            } else {
+                document.getElementById('reg-form').classList.remove('hidden');
+            }
+        } catch(e) { hideLoader(); document.getElementById('reg-form').classList.remove('hidden'); }
+    }
+
+    function startVideo() {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => { document.getElementById('video').srcObject = stream; })
+            .catch(err => alert("กรุณาเปิดกล้อง"));
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    }
+
+    async function processAttendance(type) {
+        showLoader("ตรวจสอบพิกัด...", 20, "📍");
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
+            if (dist > ALLOWED_RADIUS) {
+                alert(`อยู่นอกพื้นที่! (ห่าง ${Math.round(dist)} ม.)`);
+                hideLoader();
+                return;
+            }
+
+            showLoader("ถ่ายภาพ...", 50, "📸");
+            const canvas = document.getElementById('canvas');
+            const video = document.getElementById('video');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const img = canvas.toDataURL('image/jpeg', 0.5);
+
+            showLoader("บันทึกข้อมูล...", 80, "☁️");
+            try {
+                // อัปเดตการส่งลิ้งก์พิกัด Google Map ให้ถูกต้อง
+                const mapLink = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: mapLink, image: img })
+                });
+                const resText = await response.text();
+                if(resText.includes("Success")) {
+                    showLoader("บันทึกสำเร็จ!", 100, "✅");
+                    setTimeout(() => { hideLoader(); fetchHistory(); }, 2000);
+                }
+            } catch (e) { alert("ล้มเหลว"); hideLoader(); }
+        }, () => { alert("กรุณาเปิด GPS"); hideLoader(); }, { enableHighAccuracy: true });
+    }
+
+    async function fetchHistory() {
+        const listDiv = document.getElementById('history-list-main');
+        listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:12px;">กำลังอัปเดตประวัติล่าสุด...</p>';
+        try {
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                redirect: 'follow',
+                body: JSON.stringify({ action: 'history', name: registeredName })
+            });
+            const data = await resp.json();
+            let html = '';
+            if(!data || data.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">ยังไม่มีประวัติการลงเวลา</p>';
+                return;
+            }
+            data.forEach((h, index) => {
+                let statusColor = h.status === "เข้างาน" ? "#28a745" : "#dc3545";
+                let isActive = (index === 0) ? "active" : ""; 
+                html += `
+                <div class="history-item ${isActive}" id="item-${index}">
+                    <div class="history-header" onclick="toggleHistory(${index})">
+                        <span>📅 ${h.date}</span>
+                        <span style="color:${statusColor}; font-size:12px;">${h.status}</span>
+                    </div>
+                    <div class="history-body">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>✅ <b>เข้า:</b></span> <span>${h.timeIn}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>❌ <b>ออก:</b></span> <span>${h.timeOut || '-'}</span>
+                        </div>
+                        <div style="text-align:right; margin-top:5px; font-size:10px; color:blue;">(บันทึกสำเร็จแล้ว)</div>
+                    </div>
+                </div>`;
+            });
+            listDiv.innerHTML = html;
+        } catch(e) { listDiv.innerHTML = '<p style="color:red; text-align:center; font-size:12px;">โหลดประวัติไม่สำเร็จ</p>'; }
+    }
+
+    function toggleHistory(index) {
+        document.getElementById(`item-${index}`).classList.toggle('active');
+    }
+
+    async function register() {
+        const name = document.getElementById('regName').value;
+        if(!name) return alert("ใส่ชื่อด้วยครับ");<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบลงเวลาทำงาน</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* --- โซนที่ 1: ตกแต่งหน้าตา (CSS) --- */
+        body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; background: #f4f7f6; display: flex; justify-content: center; color: #333; }
+        .app-container { width: 100%; max-width: 480px; min-height: 100vh; background: #fff; box-shadow: 0 0 15px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; padding-bottom: 20px;}
+        .header { background: #00B900; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
+        .header h2 { margin: 0; font-weight: 500; font-size: 22px; }
+        .content { padding: 20px; text-align: center; }
+        
+        /* ปรับแต่งส่วนเวลาให้ชิดซ้ายและมีปุ่มข้างๆ */
+        .time-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fdfdfd; padding: 10px; border-radius: 15px; border: 1px solid #eee; }
+        .time-box { text-align: left; }
+        .clock { font-size: 32px; font-weight: 700; color: #00B900; line-height: 1; }
+        .date { font-size: 14px; color: #666; }
+        
+        /* ปุ่มแผนที่แบบเล็กพอดีหน้าจอ */
+        .btn-map-small { background: #17a2b8; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-map-small:active { transform: scale(0.95); }
+
+        .video-container { width: 100%; height: 250px; background: #000; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 25px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: 500; color: white; font-family: 'Sarabun', sans-serif; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-in { background: #28a745; }
+        .btn-out { background: #dc3545; }
+
+        /* สไตล์ประวัติแบบยืด-หดได้ (Accordion) */
+        .history-section { text-align: left; padding: 0 20px; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
+        .history-item { background: #f8f9fa; margin-bottom: 8px; border-radius: 10px; border-left: 5px solid #00B900; overflow: hidden; transition: 0.3s; }
+        .history-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .history-header::after { content: '▼'; font-size: 10px; color: #999; transition: 0.3s; }
+        .history-item.active .history-header::after { transform: rotate(180deg); }
+        .history-body { max-height: 0; padding: 0 15px; background: #fff; overflow: hidden; transition: max-height 0.3s ease-out; font-size: 14px; }
+        .history-item.active .history-body { max-height: 120px; padding: 10px 15px; border-top: 1px solid #eee; }
+
+        /* Loader */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; display: none; }
+        .progress-box { width: 80%; background: #e9ecef; border-radius: 10px; margin-top: 20px; height: 10px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: #00B900; transition: 0.4s; }
+        .hidden { display: none !important; }
+        input[type="text"] { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; text-align: center; box-sizing: border-box;}
+
+        /* สไตล์ของ Popup แผนที่ */
         .map-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .map-modal-content { background-color: #fff; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease; }
         .close-map-btn { position: absolute; right: 15px; top: 15px; color: #888; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
@@ -96,13 +437,11 @@
             </div>
 
             <div class="video-container"><video id="video" autoplay muted playsinline></video></div>
-            
             <div class="btn-group">
                 <button class="btn btn-in" onclick="processAttendance('in')">เข้างาน</button>
                 <button class="btn btn-out" onclick="processAttendance('out')">ออกงาน</button>
             </div>
         </div>
-        
         <div class="history-section">
             <h3 style="margin:0 0 10px 0; font-size:18px;">ประวัติการลงเวลาล่าสุด</h3>
             <div id="history-list-main"></div>
@@ -112,7 +451,7 @@
 
 <div id="mapModal" class="map-modal" onclick="closeMapOutside(event)">
     <div class="map-modal-content" onclick="event.stopPropagation()">
-        <span class="close-map-btn" onclick="closeMap()">×</span>
+        <span class="close-map-btn" onclick="closeMap()">&times;</span>
         <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #00B900;">📍 ตรวจสอบพิกัด</h3>
         <div id="map"></div>
         <div id="mapStatus" class="map-status">กำลังค้นหาตำแหน่งของคุณ...</div>
@@ -128,7 +467,6 @@
 
     let userProfile = {};
     let registeredName = "";
-    let locationWatchId; 
 
     function updateClock() {
         const now = new Date();
@@ -137,43 +475,13 @@
     }
     setInterval(updateClock, 1000);
 
-    function startLocationWatch() {
-        document.getElementById('targetCoords').innerText = `${OFFICE_LAT.toFixed(4)}, ${OFFICE_LNG.toFixed(4)}`;
-        document.getElementById('targetRadius').innerText = ALLOWED_RADIUS;
-
-        if (navigator.geolocation) {
-            locationWatchId = navigator.geolocation.watchPosition((position) => {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
-                
-                document.getElementById('currentCoords').innerText = `${userLat.toFixed(4)}, ${userLng.toFixed(4)}`;
-                
-                const distance = calculateDistance(userLat, userLng, OFFICE_LAT, OFFICE_LNG);
-                document.getElementById('distanceValue').innerText = Math.round(distance);
-
-                const statusEl = document.getElementById('locationStatus');
-                if (distance <= ALLOWED_RADIUS) {
-                    statusEl.innerHTML = `✅ อยู่ในพื้นที่ (สามารถลงเวลาได้)`;
-                    statusEl.className = "status-in";
-                } else {
-                    statusEl.innerHTML = `❌ อยู่นอกพื้นที่ (เข้าใกล้หัวหน้าอีกนิด!)`;
-                    statusEl.className = "status-out";
-                }
-            }, (error) => {
-                document.getElementById('locationStatus').innerHTML = "⚠️ ไม่สามารถดึง GPS ได้ กรุณาเปิด GPS";
-                document.getElementById('locationStatus').className = "status-out";
-            }, { enableHighAccuracy: true });
-        } else {
-            document.getElementById('locationStatus').innerHTML = "⚠️ อุปกรณ์ไม่รองรับ GPS";
-            document.getElementById('locationStatus').className = "status-out";
-        }
-    }
-
+    // --- ส่วนของแผนที่ ---
     let mapInstance;
     let userMarker;
     let targetCircle;
 
     function goToMap() {
+        // แสดง Popup แผนที่
         const modal = document.getElementById("mapModal");
         modal.style.display = "flex";
         
@@ -181,6 +489,7 @@
         statusText.innerHTML = "กำลังค้นหาตำแหน่งของคุณ... ⏳";
         statusText.style.color = "#666";
 
+        // สร้างแผนที่ถ้ายังไม่เคยสร้าง
         if (!mapInstance) {
             mapInstance = L.map('map').setView([OFFICE_LAT, OFFICE_LNG], 16);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -196,8 +505,10 @@
             }).addTo(mapInstance).bindPopup("พื้นที่ที่อนุญาตให้สแกน");
         }
 
+        // แก้ไขปัญหาแผนที่โหลดไม่เต็มกรอบ
         setTimeout(() => { mapInstance.invalidateSize(); }, 200);
 
+        // ดึงตำแหน่งปัจจุบันของผู้ใช้
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((position) => {
                 const userLat = position.coords.latitude;
@@ -211,6 +522,7 @@
                     userMarker = L.marker([userLat, userLng]).addTo(mapInstance).bindPopup("คุณอยู่ที่นี่").openPopup();
                 }
 
+                // คำนวณระยะห่าง
                 const distance = calculateDistance(userLat, userLng, OFFICE_LAT, OFFICE_LNG);
                 if (distance <= ALLOWED_RADIUS) {
                     statusText.innerHTML = `✅ คุณอยู่ในพื้นที่ (ห่าง ${Math.round(distance)} ม.)`;
@@ -229,8 +541,16 @@
         }
     }
 
-    function closeMap() { document.getElementById("mapModal").style.display = "none"; }
-    function closeMapOutside(event) { if (event.target === document.getElementById("mapModal")) closeMap(); }
+    function closeMap() {
+        document.getElementById("mapModal").style.display = "none";
+    }
+
+    function closeMapOutside(event) {
+        if (event.target === document.getElementById("mapModal")) {
+            closeMap();
+        }
+    }
+    // -------------------
 
     function showLoader(text, percent, icon="⏳") {
         document.getElementById('loader').style.display = 'flex';
@@ -263,7 +583,6 @@
                 document.getElementById('welcomeMsg').innerText = "พนักงาน: " + registeredName;
                 document.getElementById('main-app').classList.remove('hidden');
                 startVideo();
-                startLocationWatch(); 
                 fetchHistory();
             } else {
                 document.getElementById('reg-form').classList.remove('hidden');
@@ -290,7 +609,7 @@
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
             if (dist > ALLOWED_RADIUS) {
-                alert(`อยู่นอกพื้นที่! (ห่าง ${Math.round(dist)} ม.)\nโปรดเดินเข้าใกล้เขตออฟฟิศอีกนิดครับ`);
+                alert(`อยู่นอกพื้นที่! (ห่าง ${Math.round(dist)} ม.)`);
                 hideLoader();
                 return;
             }
@@ -307,7 +626,7 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     redirect: 'follow',
-                    body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: `https://www.google.com/maps?q=$${pos.coords.latitude},${pos.coords.longitude}`, image: img })
+                    body: JSON.stringify({ action: 'attendance', name: registeredName, type: type, location: `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`, image: img })
                 });
                 const resText = await response.text();
                 if(resText.includes("Success")) {
@@ -315,7 +634,7 @@
                     setTimeout(() => { hideLoader(); fetchHistory(); }, 2000);
                 }
             } catch (e) { alert("ล้มเหลว"); hideLoader(); }
-        }, () => { alert("กรุณาเปิด GPS และอนุญาตการเข้าถึงตำแหน่ง"); hideLoader(); }, { enableHighAccuracy: true });
+        }, () => { alert("กรุณาเปิด GPS"); hideLoader(); }, { enableHighAccuracy: true });
     }
 
     async function fetchHistory() {
@@ -364,7 +683,6 @@
     async function register() {
         const name = document.getElementById('regName').value;
         if(!name) return alert("ใส่ชื่อด้วยครับ");
-        
         showLoader("บันทึก...", 50);
         try {
             await fetch(API_URL, {
