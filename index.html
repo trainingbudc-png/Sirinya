@@ -12,103 +12,84 @@
 
     <style>
         /* --- โซนตกแต่งหน้าตา (CSS) --- */
-  /* --- 1. บังคับให้ทุกอย่างอยู่ตรงกลางจอ (ทั้งคอมและมือถือ) --- */
+/* --- 1. บังคับพื้นหลังให้อยู่กึ่งกลางเป๊ะๆ ทั้งแนวตั้งและแนวนอน --- */
         body { 
             font-family: 'Sarabun', sans-serif; 
             margin: 0; 
             padding: 0; 
             background: #e9ecef; 
-            color: #333; 
             display: flex; 
-            justify-content: center; /* จัดกึ่งกลางแนวนอน */
-            align-items: flex-start; /* ให้เนื้อหาเริ่มจากขอบบน (เพื่อเวลาเลื่อนจอจะได้ไม่บั๊ก) */
+            justify-content: center; /* ตรงกลางแนวนอน */
+            align-items: center; /* ตรงกลางแนวตั้ง */
             min-height: 100vh; 
+            color: #333; 
         }
 
-        /* --- 2. กรอบแอปพลิเคชัน (จำลองหน้าจอมือถือ) --- */
+        /* --- 2. กรอบแอปพลิเคชัน --- */
         .app-container { 
             width: 100%; 
-            max-width: 480px; /* ขนาดจำลองมือถือ */
-            min-height: 100vh; 
+            max-width: 480px; 
+            min-height: 100vh; /* ในมือถือให้เต็มจอ */
             background: #fff; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.1); 
+            box-shadow: 0 0 20px rgba(0,0,0,0.15); 
             position: relative; 
             overflow-x: hidden; 
             display: flex;
             flex-direction: column;
-            box-sizing: border-box; /* สำคัญมาก ป้องกันขอบล้นจอ */
         }
 
-        /* --- 3. กล้องวิดีโอ (ปรับใหม่ให้พอดีกับหน้าจอมือถือทุกรุ่น) --- */
-        .video-container { 
-            width: 100%; 
-            aspect-ratio: 4 / 3; /* ใช้สัดส่วนแทนการกำหนดความสูงตายตัว */
-            background: #000; 
-            border-radius: 15px; 
-            overflow: hidden; 
-            position: relative; 
-            margin-bottom: 20px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
-        }
-        video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
+        /* ลูกเล่นพิเศษ: ถ้าเปิดบนจอคอม/แท็บเล็ต ให้จำลองเป็นกรอบมือถือลอยอยู่ตรงกลาง */
+        @media (min-width: 481px) {
+            .app-container {
+                min-height: 90vh; /* ลดความสูงลงนิดนึง ให้เห็นว่าอยู่ตรงกลางแนวตั้ง */
+                border-radius: 20px; /* ขอบมนสวยๆ */
+            }
         }
 
-        /* --- 4. จัดฟอร์มลงทะเบียนให้อยู่ตรงกลางของแอป --- */
+        /* --- 3. หน้าลงทะเบียนให้อยู่ตรงกลางเป๊ะ --- */
         #reg-form {
             display: flex;
             flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            flex: 1; /* ดันให้อยู่ตรงกลางของความสูงแอป */
+            justify-content: center; /* กลางแนวตั้ง */
+            align-items: center; /* กลางแนวนอน */
+            height: 100vh; /* ความสูงเต็มกรอบ */
             padding: 20px;
             box-sizing: border-box;
-            min-height: 100vh;
         }
-
-        #reg-form h2 { margin-bottom: 20px; color: #00B900; }
-        #reg-form input[type="text"] {
-            width: 100%;
-            max-width: 350px;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 16px;
-            font-family: 'Sarabun', sans-serif;
-            box-sizing: border-box;
-        }
-        #reg-form input[type="text"]:focus {
-            border-color: #00B900;
-            outline: none;
+        #reg-form h2 { margin-bottom: 20px; color: #007bff; }
+        #reg-form input {
+            width: 100%; max-width: 320px; padding: 15px; 
+            border: 1px solid #ddd; border-radius: 10px; 
+            margin-bottom: 15px; text-align: center; font-size: 16px; font-family: 'Sarabun';
         }
         #reg-form button {
-            width: 100%;
-            max-width: 350px;
-            background: #00B900;
-            color: white;
-            font-size: 18px;
-            border-radius: 10px;
-            padding: 15px;
-            border: none;
-            cursor: pointer;
-            font-family: 'Sarabun', sans-serif;
+            width: 100%; max-width: 320px; background: #007bff; color: white; 
+            padding: 15px; border-radius: 10px; border: none; font-size: 18px; font-family: 'Sarabun'; cursor: pointer;
         }
+
+        /* --- 4. โค้ดส่วนอื่นๆ (หน้าสแกน, แผนที่, ประวัติ) --- */
+        .header { background: #00B900; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
+        .header h2 { margin: 0; font-weight: 500; font-size: 22px; }
+        .content { padding: 20px; text-align: center; flex: 1; }
         
-        /* โซนเวลา และ ปุ่มแผนที่ (จัดให้อยู่คู่กัน) */
-        .time-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fdfdfd; padding: 10px; border-radius: 15px; border: 1px solid #eee; }
+        .time-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 15px; border: 1px solid #eee; }
         .time-box { text-align: left; }
         .clock { font-size: 32px; font-weight: 700; color: #00B900; line-height: 1; }
         .date { font-size: 14px; color: #666; }
         
-        /* ปุ่มแผนที่แบบเล็กพอดีหน้าจอ */
         .btn-map-small { background: #17a2b8; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-map-small:active { transform: scale(0.95); }
 
-        .video-container { width: 100%; height: 250px; background: #000; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .location-card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 15px; padding: 12px; margin-bottom: 20px; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; text-align: left; }
+        .loc-item { background: #f4f7f6; padding: 8px; border-radius: 8px; }
+        .loc-item b { color: #555; }
+        .status-container { text-align: center; padding-top: 10px; border-top: 1px dashed #ccc; font-weight: bold; font-size: 14px; }
+        .status-in { color: #00B900; } 
+        .status-out { color: #dc3545; } 
+        .status-wait { color: #f39c12; }
+
+        .video-container { width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         video { width: 100%; height: 100%; object-fit: cover; }
         .btn-group { display: flex; gap: 10px; margin-bottom: 25px; }
         .btn { flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: 500; color: white; font-family: 'Sarabun', sans-serif; cursor: pointer; transition: 0.2s; }
@@ -116,8 +97,7 @@
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
 
-        /* สไตล์ประวัติแบบยืด-หดได้ (Accordion) */
-        .history-section { text-align: left; padding: 0 20px; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
+        .history-section { text-align: left; padding: 0 20px; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; padding-bottom: 20px;}
         .history-item { background: #f8f9fa; margin-bottom: 8px; border-radius: 10px; border-left: 5px solid #00B900; overflow: hidden; transition: 0.3s; }
         .history-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 14px; }
         .history-header::after { content: '▼'; font-size: 10px; color: #999; transition: 0.3s; }
@@ -125,14 +105,11 @@
         .history-body { max-height: 0; padding: 0 15px; background: #fff; overflow: hidden; transition: max-height 0.3s ease-out; font-size: 14px; }
         .history-item.active .history-body { max-height: 120px; padding: 10px 15px; border-top: 1px solid #eee; }
 
-        /* Loader */
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; display: none; }
         .progress-box { width: 80%; background: #e9ecef; border-radius: 10px; margin-top: 20px; height: 10px; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: #00B900; transition: 0.4s; }
         .hidden { display: none !important; }
-        input[type="text"] { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; text-align: center; box-sizing: border-box;}
 
-        /* สไตล์ของ Popup แผนที่ */
         .map-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .map-modal-content { background-color: #fff; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease; }
         .close-map-btn { position: absolute; right: 15px; top: 15px; color: #888; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
