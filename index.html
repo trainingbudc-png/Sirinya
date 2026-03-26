@@ -375,10 +375,11 @@
     let targetCircle = null;
     let historyMapInstance = null;
 
-    function goToMap() {
+   function goToMap() {
         document.getElementById("mapModal").style.display = "flex";
         const statusText = document.getElementById("mapStatus");
         statusText.innerHTML = "กำลังค้นหาตำแหน่งของคุณ... ⏳";
+        statusText.style.color = "#333"; // รีเซ็ตสีตัวอักษร
         
         if (!mapInstance) {
             mapInstance = L.map('map').setView([OFFICE_LAT, OFFICE_LNG], 16);
@@ -413,7 +414,22 @@
                     statusText.innerHTML = `❌ อยู่นอกพื้นที่ (${Math.round(distance)} ม.)`; 
                     statusText.style.color = "#dc3545"; 
                 }
-            }, () => { statusText.innerHTML = "⚠️ ไม่สามารถดึงตำแหน่งได้"; }, { enableHighAccuracy: true });
+            }, (error) => { 
+                // จัดการ Error ให้แสดงผลชัดเจน ไม่ค้าง
+                console.warn("GPS Error:", error);
+                if (error.code === 1) statusText.innerHTML = "⚠️ คุณไม่ได้อนุญาตให้เข้าถึงตำแหน่ง";
+                else if (error.code === 2) statusText.innerHTML = "⚠️ สัญญาณ GPS อ่อนหรือไม่พบตำแหน่ง";
+                else if (error.code === 3) statusText.innerHTML = "⚠️ ค้นหาตำแหน่งนานเกินไป (Timeout)";
+                else statusText.innerHTML = "⚠️ ไม่สามารถดึงตำแหน่งได้";
+                statusText.style.color = "#dc3545"; 
+            }, { 
+                enableHighAccuracy: true, 
+                timeout: 10000,     // 🌟 ให้เวลาค้นหาแค่ 10 วินาที ถ้าหาไม่เจอให้ตัดจบเลย
+                maximumAge: 0       // 🌟 บังคับให้หาตำแหน่งใหม่ล่าสุดเสมอ ไม่เอาของเก่าที่ค้างในเครื่อง
+            });
+        } else {
+            statusText.innerHTML = "⚠️ อุปกรณ์ของคุณไม่รองรับ GPS";
+            statusText.style.color = "#dc3545"; 
         }
     }
     
