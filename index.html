@@ -344,67 +344,28 @@
     let mapInstance, userMarker, targetCircle, historyMapInstance;
 
     function goToMap() {
-        // 1. เปิดหน้าต่างแผนที่ขึ้นมาก่อน
         document.getElementById("mapModal").style.display = "flex";
+        const statusText = document.getElementById("mapStatus");
+        statusText.innerHTML = "กำลังค้นหาตำแหน่งของคุณ... ⏳";
         
-        // 2. สร้างแผนที่ (ถ้ายังไม่เคยสร้าง)
-        if (!pickerMapInstance) {
-            pickerMapInstance = L.map('picker-map').setView([OFFICE_LAT, OFFICE_LNG], 17);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMapInstance);
-            
-            pickerMarker = L.marker([OFFICE_LAT, OFFICE_LNG], { draggable: true }).addTo(pickerMapInstance);
-            
-            // เมื่อ "ลากหมุด" -> อัปเดตพิกัดแบบเรียลไทม์ในหน้าตั้งค่า
-            pickerMarker.on('dragend', function (e) {
-                selectedLat = pickerMarker.getLatLng().lat;
-                selectedLng = pickerMarker.getLatLng().lng;
-                document.getElementById('set-lat').value = selectedLat.toFixed(6);
-                document.getElementById('set-lng').value = selectedLng.toFixed(6);
-            });
-
-            // เมื่อ "คลิกแผนที่" -> ย้ายหมุดและอัปเดตพิกัดแบบเรียลไทม์ในหน้าตั้งค่า
-            pickerMapInstance.on('click', function(e) {
-                selectedLat = e.latlng.lat;
-                selectedLng = e.latlng.lng;
-                pickerMarker.setLatLng([selectedLat, selectedLng]);
-                document.getElementById('set-lat').value = selectedLat.toFixed(6);
-                document.getElementById('set-lng').value = selectedLng.toFixed(6);
-            });
+        if (!mapInstance) {
+            mapInstance = L.map('map').setView([OFFICE_LAT, OFFICE_LNG], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapInstance);
+            targetCircle = L.circle([OFFICE_LAT, OFFICE_LNG], { color: '#00B900', fillColor: '#00B900', fillOpacity: 0.2, radius: ALLOWED_RADIUS }).addTo(mapInstance);
         }
-        
-        // รีเฟรชขนาดแผนที่ให้แสดงผลถูกต้อง
-        setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
+        setTimeout(() => { mapInstance.invalidateSize(); }, 200);
 
-        // 3. 🌟 บังคับดึงพิกัดปัจจุบันอัตโนมัติ 🌟
         if (navigator.geolocation) {
-            const btn = document.getElementById('btn-get-current');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ กำลังค้นหาตำแหน่งปัจจุบัน...";
-            
             navigator.geolocation.getCurrentPosition((position) => {
-                // ดึงตำแหน่งปัจจุบันสำเร็จ
-                selectedLat = position.coords.latitude;
-                selectedLng = position.coords.longitude;
+                const userLat = position.coords.latitude; const userLng = position.coords.longitude;
+                mapInstance.setView([userLat, userLng], 17);
+                if (userMarker) userMarker.setLatLng([userLat, userLng]);
+                else userMarker = L.marker([userLat, userLng]).addTo(mapInstance).bindPopup("คุณอยู่ที่นี่").openPopup();
                 
-                // อัปเดตตัวเลขแบบเรียลไทม์
-                document.getElementById('set-lat').value = selectedLat.toFixed(6);
-                document.getElementById('set-lng').value = selectedLng.toFixed(6);
-                
-                // เลื่อนหน้าจอแผนที่และหมุดไปที่ตำแหน่งปัจจุบัน
-                pickerMapInstance.setView([selectedLat, selectedLng], 18);
-                pickerMarker.setLatLng([selectedLat, selectedLng]);
-                btn.innerHTML = originalText;
-            }, (error) => {
-                // ถ้าดึงไม่ได้ (เช่น ปิด GPS ไว้) ให้ใช้ค่าพิกัดออฟฟิศเดิม
-                selectedLat = OFFICE_LAT;
-                selectedLng = OFFICE_LNG;
-                document.getElementById('set-lat').value = selectedLat.toFixed(6);
-                document.getElementById('set-lng').value = selectedLng.toFixed(6);
-                pickerMapInstance.setView([OFFICE_LAT, OFFICE_LNG], 17);
-                pickerMarker.setLatLng([OFFICE_LAT, OFFICE_LNG]);
-                btn.innerHTML = originalText;
-                console.log("ไม่สามารถดึงตำแหน่งปัจจุบันได้ ใช้พิกัดเดิมแทน");
-            }, { enableHighAccuracy: true });
+                const distance = calculateDistance(userLat, userLng, OFFICE_LAT, OFFICE_LNG);
+                if (distance <= ALLOWED_RADIUS) { statusText.innerHTML = `✅ อยู่ในพื้นที่ (${Math.round(distance)} ม.)`; statusText.style.color = "#00B900"; } 
+                else { statusText.innerHTML = `❌ อยู่นอกพื้นที่ (${Math.round(distance)} ม.)`; statusText.style.color = "#dc3545"; }
+            }, () => { statusText.innerHTML = "⚠️ ไม่สามารถดึงตำแหน่งได้"; }, { enableHighAccuracy: true });
         }
     }
     function closeMap() { document.getElementById("mapModal").style.display = "none"; }
