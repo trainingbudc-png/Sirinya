@@ -84,60 +84,38 @@
         <button class="btn-large" onclick="register()">ลงทะเบียน</button>
     </div>
 
-    <div id="settings-page" class="hidden">
+   <div id="settings-page" class="hidden">
         <h2 style="color: #6f42c1; margin-bottom: 20px;">⚙️ ตั้งค่าจุดสแกน</h2>
         <div style="width: 100%; max-width: 320px; text-align: left;">
             <label style="font-weight: bold; font-size: 14px; color: #555;">ละติจูด (Latitude):</label>
-            <input type="number" id="set-lat" class="input-box" style="margin-top: 5px; text-align: left;" step="any">
+            <input type="number" id="set-lat" class="input-box" style="margin-top: 5px; text-align: left; margin-bottom: 5px;" step="any">
             
             <label style="font-weight: bold; font-size: 14px; color: #555;">ลองจิจูด (Longitude):</label>
-            <input type="number" id="set-lng" class="input-box" style="margin-top: 5px; text-align: left;" step="any">
+            <input type="number" id="set-lng" class="input-box" style="margin-top: 5px; text-align: left; margin-bottom: 15px;" step="any">
+
+            <button onclick="openMapPicker()" style="width: 100%; background: #17a2b8; color: white; padding: 10px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; margin-bottom: 15px; font-size: 16px;">
+                📍 จิ้มเลือกจากแผนที่
+            </button>
             
             <label style="font-weight: bold; font-size: 14px; color: #555;">รัศมีที่อนุญาต (เมตร):</label>
             <input type="number" id="set-rad" class="input-box" style="margin-top: 5px; text-align: left;">
         </div>
         
         <div style="display: flex; gap: 10px; width: 100%; max-width: 320px; margin-top: 10px;">
-            <button onclick="saveSettings()" style="flex: 1; background: #00B900; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer;">💾 บันทึก</button>
-            <button onclick="closeSettings()" style="flex: 1; background: #6c757d; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer;">❌ ยกเลิก</button>
+            <button onclick="saveSettings()" style="flex: 1; background: #00B900; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 16px;">💾 บันทึก</button>
+            <button onclick="closeSettings()" style="flex: 1; background: #6c757d; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 16px;">❌ ยกเลิก</button>
         </div>
     </div>
 
-    <div id="main-app" class="hidden">
-        <div class="header">
-            <h2 id="welcomeMsg">ระบบบันทึกเวลา</h2>
-            <span onclick="openSettings()" style="cursor: pointer; font-size: 22px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));" title="ตั้งค่าระบบ">⚙️</span>
+    <div id="mapPickerModal" class="map-modal" style="display:none;" onclick="closeMapPickerOutside(event)">
+        <div class="map-modal-content" onclick="event.stopPropagation()">
+            <span class="close-map-btn" onclick="closeMapPicker()">×</span>
+            <h3 style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #17a2b8;">📍 แตะพื้นที่เพื่อเลือกพิกัด</h3>
+            <p style="text-align: center; font-size: 12px; color: #666; margin: 0 0 10px 0;">(สามารถลากหมุดสีน้ำเงินเพื่อขยับจุดได้)</p>
+            <div id="picker-map" style="height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; z-index: 1;"></div>
+            <button onclick="confirmLocation()" style="width: 100%; background: #00B900; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 16px; margin-top: 15px;">✅ ยืนยันพิกัดนี้</button>
         </div>
-        <div class="content">
-            <div class="time-container">
-                <div class="time-box">
-                    <div class="clock" id="clock">00:00:00</div>
-                    <div class="date" id="date">...</div>
-                </div>
-                
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div id="location-status-icon" style="font-size: 26px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="สถานะตำแหน่ง">🔄</div>
-                    <div style="display: flex; flex-direction: column; gap: 8px; min-width: 100px;">
-                        <button class="btn-map-small" onclick="goToMap()">📍 <span>แผนที่</span></button>
-                        <button class="btn-map-small" onclick="showAllHistoryMap()" style="background: #6f42c1;">🗺️ พิกัดทั้งหมด</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="video-container">
-                <video id="video" autoplay muted playsinline></video>
-            </div>
-            
-            <div class="btn-group">
-                <button class="btn btn-in" id="btn-in-id" onclick="processAttendance('in')">เข้างาน</button>
-                <button class="btn btn-out" id="btn-out-id" onclick="processAttendance('out')" disabled>ออกงาน</button>
-            </div>
-
-            <div class="history-section">
-                <h3 style="margin:0 0 10px 0; font-size:16px;">ประวัติการลงเวลาล่าสุด</h3>
-                <div id="history-list-main"></div>
-            </div>
-        </div>
+    </div>
     </div>
 </div>
 
@@ -267,7 +245,67 @@
             }
         } catch(e) { alert("ล้มเหลวในการเชื่อมต่อ"); hideLoader(); }
     }
+// ===================================
+    // ระบบเลือกพิกัดจากแผนที่ (Map Picker)
+    // ===================================
+    let pickerMapInstance = null;
+    let pickerMarker = null;
+    let selectedLat = OFFICE_LAT;
+    let selectedLng = OFFICE_LNG;
 
+    function openMapPicker() {
+        document.getElementById('mapPickerModal').style.display = 'flex';
+        
+        // ดึงค่าปัจจุบันจากช่องกรอก หรือถ้าว่างให้ใช้พิกัดเริ่มต้น
+        let currentLat = parseFloat(document.getElementById('set-lat').value) || OFFICE_LAT;
+        let currentLng = parseFloat(document.getElementById('set-lng').value) || OFFICE_LNG;
+        selectedLat = currentLat;
+        selectedLng = currentLng;
+
+        if (!pickerMapInstance) {
+            // สร้างแผนที่ใหม่
+            pickerMapInstance = L.map('picker-map').setView([currentLat, currentLng], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMapInstance);
+            
+            // สร้างหมุดที่สามารถลากได้
+            pickerMarker = L.marker([currentLat, currentLng], { draggable: true }).addTo(pickerMapInstance);
+            
+            // เมื่อลากหมุดเสร็จ ให้อัปเดตพิกัด
+            pickerMarker.on('dragend', function (e) {
+                selectedLat = pickerMarker.getLatLng().lat;
+                selectedLng = pickerMarker.getLatLng().lng;
+            });
+
+            // เมื่อจิ้มลงบนแผนที่ ให้ย้ายหมุดมาตรงที่จิ้ม
+            pickerMapInstance.on('click', function(e) {
+                selectedLat = e.latlng.lat;
+                selectedLng = e.latlng.lng;
+                pickerMarker.setLatLng([selectedLat, selectedLng]);
+            });
+        } else {
+            // ถ้าระบบเคยสร้างแผนที่ไว้แล้ว แค่ย้ายไปพิกัดปัจจุบัน
+            pickerMapInstance.setView([currentLat, currentLng], 17);
+            pickerMarker.setLatLng([currentLat, currentLng]);
+        }
+        
+        // ช่วยแก้บั๊กแผนที่โหลดไม่เต็มกรอบ
+        setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
+    }
+
+    function closeMapPicker() {
+        document.getElementById('mapPickerModal').style.display = 'none';
+    }
+
+    function closeMapPickerOutside(e) {
+        if (e.target === document.getElementById('mapPickerModal')) closeMapPicker();
+    }
+
+    // กดยืนยันแล้วเอาพิกัดไปใส่ในช่องกรอก
+    function confirmLocation() {
+        document.getElementById('set-lat').value = selectedLat.toFixed(6); // ใส่ทศนิยม 6 ตำแหน่ง
+        document.getElementById('set-lng').value = selectedLng.toFixed(6);
+        closeMapPicker();
+    }
     // ===================================
     // แผนที่
     // ===================================
