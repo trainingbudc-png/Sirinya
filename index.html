@@ -167,8 +167,8 @@
     let OFFICE_LNG = 100.26354157452536; 
     let ALLOWED_RADIUS = 150; 
 
-    // รหัสผ่านสำหรับเข้าหน้าตั้งค่า (แก้เลข 9999 เป็นรหัสที่คุณต้องการได้เลยครับ)
-    const ADMIN_PIN = "9999"; 
+    // รหัสผ่านสำหรับเข้าหน้าตั้งค่า (แก้เลข1111 เป็นรหัสที่คุณต้องการได้เลยครับ)
+    const ADMIN_PIN = "1111"; 
 
     let userProfile = {};
     let registeredName = "";
@@ -353,7 +353,7 @@
 
     async function initLiff() {
         showLoader("กำลังโหลดระบบ...", 20, "⚙️");
-        await loadSettingsFromSheet(); // โหลดพิกัดจาก Sheet ก่อนเริ่มระบบ
+       // await loadSettingsFromSheet(); // โหลดพิกัดจาก Sheet ก่อนเริ่มระบบ
         try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) { liff.login(); } 
