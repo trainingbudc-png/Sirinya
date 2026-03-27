@@ -63,7 +63,7 @@
         .map-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .map-modal-content { background-color: #fff; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease; }
         .close-map-btn { position: absolute; right: 15px; top: 15px; color: #888; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
-        #map, #history-map, #picker-map { height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; z-index: 1;}
+        #map, #history-map { height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; z-index: 1;}
         .map-status { text-align: center; font-size: 14px; margin-top: 15px; font-weight: 500; }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
@@ -92,16 +92,20 @@
             
             <label style="font-weight: bold; font-size: 14px; color: #555;">ลองจิจูด (Longitude):</label>
             <input type="number" id="set-lng" class="input-box" style="margin-top: 5px; text-align: left; margin-bottom: 15px;" step="any">
-            
-            <button onclick="openMapPicker()" style="width: 100%; background: #17a2b8; color: white; padding: 10px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; margin-bottom: 15px; font-size: 16px;">
-                📍 จิ้มเลือกจากแผนที่
-            </button>
+
+            <div style="margin-bottom: 15px;">
+                <button id="btn-get-current" onclick="getCurrentLocationForPicker()" style="width: 100%; background: #007bff; color: white; padding: 10px; border-radius: 10px 10px 0 0; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 14px; font-weight: bold;">
+                    🎯 ดึงตำแหน่งปัจจุบันของฉัน
+                </button>
+                <div id="picker-map" style="height: 250px; width: 100%; border-radius: 0 0 10px 10px; border: 1px solid #ddd; z-index: 1;"></div>
+                <p style="text-align: center; font-size: 12px; color: #666; margin-top: 5px;">(จิ้มหรือลากหมุดบนแผนที่ เลขพิกัดจะเปลี่ยนทันที)</p>
+            </div>
             
             <label style="font-weight: bold; font-size: 14px; color: #555;">รัศมีที่อนุญาต (เมตร):</label>
-            <input type="number" id="set-rad" class="input-box" style="margin-top: 5px; text-align: left;" oninput="if(pickerCircle) pickerCircle.setRadius(parseInt(this.value) || 0)">
+            <input type="number" id="set-rad" class="input-box" style="margin-top: 5px; text-align: left; margin-bottom: 15px;">
         </div>
         
-        <div style="display: flex; gap: 10px; width: 100%; max-width: 320px; margin-top: 10px;">
+        <div style="display: flex; gap: 10px; width: 100%; max-width: 320px;">
             <button onclick="saveSettings()" style="flex: 1; background: #00B900; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 16px;">💾 บันทึก</button>
             <button onclick="closeSettings()" style="flex: 1; background: #6c757d; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 16px;">❌ ยกเลิก</button>
         </div>
@@ -154,21 +158,6 @@
     </div>
 </div>
 
-<div id="mapPickerModal" class="map-modal" style="display:none;" onclick="closeMapPickerOutside(event)">
-    <div class="map-modal-content" onclick="event.stopPropagation()">
-        <span class="close-map-btn" onclick="closeMapPicker()">×</span>
-        <h3 id="picker-title" style="margin: 0 0 10px 0; font-size: 18px; text-align: center; color: #17a2b8;">📍 แตะพื้นที่เพื่อเลือกพิกัด</h3>
-        <p style="text-align: center; font-size: 12px; color: #666; margin: 0 0 10px 0;">(สามารถลากหมุดสีน้ำเงินเพื่อขยับจุดได้)</p>
-        
-        <button id="btn-get-current" onclick="getCurrentLocationForPicker()" style="width: 100%; background: #007bff; color: white; padding: 10px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 14px; margin-bottom: 10px; font-weight: bold;">
-            🎯 ดึงตำแหน่งปัจจุบันของฉัน
-        </button>
-
-        <div id="picker-map"></div>
-        <button onclick="confirmLocation()" style="width: 100%; background: #00B900; color: white; padding: 12px; border-radius: 10px; border: none; font-family: 'Sarabun'; cursor: pointer; font-size: 16px; margin-top: 15px;">✅ ยืนยันพิกัดนี้</button>
-    </div>
-</div>
-
 <div id="historyMapModal" class="map-modal" onclick="closeHistoryMapOutside(event)">
     <div class="map-modal-content" onclick="event.stopPropagation()">
         <span class="close-map-btn" onclick="closeHistoryMap()">×</span>
@@ -186,12 +175,17 @@
     let OFFICE_LNG = 100.26354157452536; 
     let ALLOWED_RADIUS = 150; 
 
+    // รหัสผ่านเข้าหน้าตั้งค่า
     const ADMIN_PIN = "1111"; 
+
     let userProfile = {};
     let registeredName = "";
     let historyDataList = [];
     let watchId = null;
 
+    // ===================================
+    // โหลดพิกัดล่าสุดจาก Sheet
+    // ===================================
     async function loadSettingsFromSheet() {
         try {
             const resp = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getSettings' }) });
@@ -232,22 +226,48 @@
     }
 
     // ===================================
-    // ระบบแผนที่ตั้งค่าพิกัด (แอดมิน)
+    // ระบบตั้งค่าพิกัดแบบ Real-time
     // ===================================
     let pickerMapInstance = null;
     let pickerMarker = null;
-    let pickerCircle = null; 
-    let selectedLat = OFFICE_LAT;
-    let selectedLng = OFFICE_LNG;
 
     function openSettings() {
         const pin = prompt("กรุณาใส่รหัสผ่านแอดมิน เพื่อเข้าตั้งค่าพิกัด:");
         if (pin === ADMIN_PIN) {
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('settings-page').classList.remove('hidden');
+            
+            // นำค่าปัจจุบันไปแสดงในช่องกรอก
             document.getElementById('set-lat').value = OFFICE_LAT;
             document.getElementById('set-lng').value = OFFICE_LNG;
             document.getElementById('set-rad').value = ALLOWED_RADIUS;
+
+            // โหลดแผนที่ทันทีที่เปิดหน้าตั้งค่า
+            if (!pickerMapInstance) {
+                pickerMapInstance = L.map('picker-map').setView([OFFICE_LAT, OFFICE_LNG], 17);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMapInstance);
+                
+                pickerMarker = L.marker([OFFICE_LAT, OFFICE_LNG], { draggable: true }).addTo(pickerMapInstance);
+                
+                // เมื่อ "ลากหมุด" -> อัปเดตช่องตัวเลขทันที
+                pickerMarker.on('dragend', function (e) {
+                    document.getElementById('set-lat').value = pickerMarker.getLatLng().lat.toFixed(6);
+                    document.getElementById('set-lng').value = pickerMarker.getLatLng().lng.toFixed(6);
+                });
+
+                // เมื่อ "คลิกแผนที่" -> ย้ายหมุดและอัปเดตช่องตัวเลขทันที
+                pickerMapInstance.on('click', function(e) {
+                    pickerMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
+                    document.getElementById('set-lat').value = e.latlng.lat.toFixed(6);
+                    document.getElementById('set-lng').value = e.latlng.lng.toFixed(6);
+                });
+            } else {
+                pickerMapInstance.setView([OFFICE_LAT, OFFICE_LNG], 17);
+                pickerMarker.setLatLng([OFFICE_LAT, OFFICE_LNG]);
+            }
+            
+            setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
+            
         } else if (pin !== null) {
             alert("รหัสผ่านไม่ถูกต้อง ❌");
         }
@@ -258,59 +278,7 @@
         document.getElementById('main-app').classList.remove('hidden');
     }
 
-    function openMapPicker() {
-        document.getElementById('mapPickerModal').style.display = 'flex';
-        
-        let currentLat = parseFloat(document.getElementById('set-lat').value) || OFFICE_LAT;
-        let currentLng = parseFloat(document.getElementById('set-lng').value) || OFFICE_LNG;
-        let currentRad = parseInt(document.getElementById('set-rad').value) || ALLOWED_RADIUS;
-        
-        selectedLat = currentLat;
-        selectedLng = currentLng;
-
-        if (!pickerMapInstance) {
-            pickerMapInstance = L.map('picker-map').setView([currentLat, currentLng], 17);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMapInstance);
-            
-            pickerCircle = L.circle([currentLat, currentLng], { color: '#17a2b8', fillColor: '#17a2b8', fillOpacity: 0.2, radius: currentRad }).addTo(pickerMapInstance);
-            pickerMarker = L.marker([currentLat, currentLng], { draggable: true }).addTo(pickerMapInstance);
-            
-            pickerMarker.on('dragend', function (e) {
-                selectedLat = pickerMarker.getLatLng().lat;
-                selectedLng = pickerMarker.getLatLng().lng;
-                pickerCircle.setLatLng([selectedLat, selectedLng]); 
-                document.getElementById('set-lat').value = selectedLat.toFixed(6);
-                document.getElementById('set-lng').value = selectedLng.toFixed(6);
-            });
-
-            pickerMapInstance.on('click', function(e) {
-                selectedLat = e.latlng.lat;
-                selectedLng = e.latlng.lng;
-                pickerMarker.setLatLng([selectedLat, selectedLng]);
-                pickerCircle.setLatLng([selectedLat, selectedLng]); 
-                document.getElementById('set-lat').value = selectedLat.toFixed(6);
-                document.getElementById('set-lng').value = selectedLng.toFixed(6);
-            });
-        } else {
-            pickerMapInstance.setView([currentLat, currentLng], 17);
-            pickerMarker.setLatLng([currentLat, currentLng]);
-            pickerCircle.setLatLng([currentLat, currentLng]);
-            pickerCircle.setRadius(currentRad);
-        }
-        
-        setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
-    }
-
-    function closeMapPicker() { document.getElementById('mapPickerModal').style.display = 'none'; }
-    function closeMapPickerOutside(e) { if (e.target === document.getElementById('mapPickerModal')) closeMapPicker(); }
-    
-    // 🔥 แก้ไข 1: กดยืนยันแล้วเลขวิ่งเข้าช่อง
-    function confirmLocation() { 
-        document.getElementById('set-lat').value = selectedLat.toFixed(6);
-        document.getElementById('set-lng').value = selectedLng.toFixed(6);
-        closeMapPicker(); 
-    }
-
+    // ฟังก์ชันสำหรับปุ่ม ดึงตำแหน่งปัจจุบัน
     function getCurrentLocationForPicker() {
         if (navigator.geolocation) {
             const btn = document.getElementById('btn-get-current');
@@ -318,25 +286,27 @@
             btn.innerHTML = "⏳ กำลังค้นหาตำแหน่ง...";
             
             navigator.geolocation.getCurrentPosition((position) => {
-                selectedLat = position.coords.latitude;
-                selectedLng = position.coords.longitude;
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
                 
-                document.getElementById('set-lat').value = selectedLat.toFixed(6);
-                document.getElementById('set-lng').value = selectedLng.toFixed(6);
+                // อัปเดตตัวเลขในช่องกรอก
+                document.getElementById('set-lat').value = lat.toFixed(6);
+                document.getElementById('set-lng').value = lng.toFixed(6);
                 
-                pickerMapInstance.setView([selectedLat, selectedLng], 18);
-                pickerMarker.setLatLng([selectedLat, selectedLng]);
-                pickerCircle.setLatLng([selectedLat, selectedLng]);
+                // ย้ายแผนที่และหมุด
+                pickerMapInstance.setView([lat, lng], 18);
+                pickerMarker.setLatLng([lat, lng]);
                 
                 btn.innerHTML = originalText;
             }, (error) => {
-                alert("ไม่สามารถดึงตำแหน่งได้ กรุณาเปิด GPS ❌");
+                alert("ไม่สามารถดึงตำแหน่งได้ กรุณาตรวจสอบว่าได้เปิด GPS และอนุญาตแล้ว ❌");
                 btn.innerHTML = originalText;
             }, { enableHighAccuracy: true });
+        } else {
+            alert("อุปกรณ์ของคุณไม่รองรับ GPS ❌");
         }
     }
 
-    // 🔥 แก้ไข 2: บันทึกแล้วล้างค่าแผนที่เก่าทั้งหมด
     async function saveSettings() {
         const newLat = parseFloat(document.getElementById('set-lat').value);
         const newLng = parseFloat(document.getElementById('set-lng').value);
@@ -348,7 +318,7 @@
         try {
             const response = await fetch(API_URL, {
                 method: 'POST', redirect: 'follow',
-                body: JSON.stringify({ action: 'saveSettings', lat: newLat, lng: newLng, rad: newRad, name: registeredName })
+                body: JSON.stringify({ action: 'saveSettings', lat: newLat, lng: newLng, rad: newRad, name: registeredName }) // แนบชื่อคนตั้งค่าไปให้ sheet
             });
             const resText = await response.text();
             if(resText.includes("Success")) {
@@ -356,14 +326,9 @@
                 OFFICE_LNG = newLng;
                 ALLOWED_RADIUS = newRad;
                 
-                if(mapInstance) { 
-                    mapInstance.remove(); 
-                    mapInstance = null; 
-                    userMarker = null; 
-                    targetCircle = null; 
-                }
+                // รีเซ็ตแผนที่หลักเพื่อให้ตอนกดดูแผนที่มันใช้พิกัดใหม่
+                if(mapInstance) { mapInstance.remove(); mapInstance = null; }
                 if(historyMapInstance) { historyMapInstance.remove(); historyMapInstance = null; }
-                
                 startLocationWatch(); 
 
                 hideLoader();
@@ -374,14 +339,10 @@
     }
 
     // ===================================
-    // แผนที่ตรวจสอบพิกัด (สำหรับพนักงาน)
+    // แผนที่หลัก / ประวัติ / ระบบอื่นๆ
     // ===================================
-    let mapInstance = null;
-    let userMarker = null;
-    let targetCircle = null;
-    let historyMapInstance = null;
+    let mapInstance, userMarker, targetCircle, historyMapInstance;
 
-    // 🔥 แก้ไข 3: อัปเดตวงกลมแผนที่ตรวจสอบพิกัดให้ตรงจุดที่ตั้งค่า
     function goToMap() {
         document.getElementById("mapModal").style.display = "flex";
         const statusText = document.getElementById("mapStatus");
@@ -391,46 +352,22 @@
             mapInstance = L.map('map').setView([OFFICE_LAT, OFFICE_LNG], 16);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapInstance);
             targetCircle = L.circle([OFFICE_LAT, OFFICE_LNG], { color: '#00B900', fillColor: '#00B900', fillOpacity: 0.2, radius: ALLOWED_RADIUS }).addTo(mapInstance);
-        } else {
-            // บังคับอัปเดตจุดศูนย์กลางและวงกลมให้เป็นพิกัดใหม่
-            mapInstance.setView([OFFICE_LAT, OFFICE_LNG], 16);
-            targetCircle.setLatLng([OFFICE_LAT, OFFICE_LNG]);
-            targetCircle.setRadius(ALLOWED_RADIUS);
         }
-        
         setTimeout(() => { mapInstance.invalidateSize(); }, 200);
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((position) => {
-                const userLat = position.coords.latitude; 
-                const userLng = position.coords.longitude;
+                const userLat = position.coords.latitude; const userLng = position.coords.longitude;
                 mapInstance.setView([userLat, userLng], 17);
-                
                 if (userMarker) userMarker.setLatLng([userLat, userLng]);
                 else userMarker = L.marker([userLat, userLng]).addTo(mapInstance).bindPopup("คุณอยู่ที่นี่").openPopup();
                 
                 const distance = calculateDistance(userLat, userLng, OFFICE_LAT, OFFICE_LNG);
-                if (distance <= ALLOWED_RADIUS) { 
-                    statusText.innerHTML = `✅ อยู่ในพื้นที่ (${Math.round(distance)} ม.)`; 
-                    statusText.style.color = "#00B900"; 
-                } else { 
-                    statusText.innerHTML = `❌ อยู่นอกพื้นที่ (${Math.round(distance)} ม.)`; 
-                    statusText.style.color = "#dc3545"; 
-                }
-            }, (error) => { 
-                console.warn("GPS Error:", error);
-                if (error.code === 1) statusText.innerHTML = "⚠️ คุณไม่ได้อนุญาตให้เข้าถึงตำแหน่ง";
-                else if (error.code === 2) statusText.innerHTML = "⚠️ สัญญาณ GPS อ่อนหรือไม่พบตำแหน่ง";
-                else if (error.code === 3) statusText.innerHTML = "⚠️ ค้นหาตำแหน่งนานเกินไป (Timeout)";
-                else statusText.innerHTML = "⚠️ ไม่สามารถดึงตำแหน่งได้";
-                statusText.style.color = "#dc3545"; 
-            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-        } else {
-            statusText.innerHTML = "⚠️ อุปกรณ์ของคุณไม่รองรับ GPS";
-            statusText.style.color = "#dc3545"; 
+                if (distance <= ALLOWED_RADIUS) { statusText.innerHTML = `✅ อยู่ในพื้นที่ (${Math.round(distance)} ม.)`; statusText.style.color = "#00B900"; } 
+                else { statusText.innerHTML = `❌ อยู่นอกพื้นที่ (${Math.round(distance)} ม.)`; statusText.style.color = "#dc3545"; }
+            }, () => { statusText.innerHTML = "⚠️ ไม่สามารถดึงตำแหน่งได้"; }, { enableHighAccuracy: true });
         }
     }
-    
     function closeMap() { document.getElementById("mapModal").style.display = "none"; }
     function closeMapOutside(event) { if (event.target === document.getElementById("mapModal")) closeMap(); }
 
@@ -457,7 +394,6 @@
         });
         if (bounds.length > 0) historyMapInstance.fitBounds(bounds, { padding: [20, 20] });
     }
-    
     function closeHistoryMap() { document.getElementById("historyMapModal").style.display = "none"; }
     function closeHistoryMapOutside(event) { if (event.target === document.getElementById("historyMapModal")) closeHistoryMap(); }
 
@@ -485,9 +421,9 @@
     }
     function hideLoader() { document.getElementById('loader').style.display = 'none'; }
 
-    // 🔥 แก้ไข 4: เปิดการดึงข้อมูลตั้งค่าจากชีตเมื่อโหลดหน้าเว็บ
     async function initLiff() {
         showLoader("กำลังโหลดระบบ...", 20, "⚙️");
+        // ผมเอาเครื่องหมาย // ออกแล้วเพื่อให้มันดึงค่าพิกัดจาก Google Sheet มาใช้นะครับ
         await loadSettingsFromSheet(); 
         try {
             await liff.init({ liffId: LIFF_ID });
