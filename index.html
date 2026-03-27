@@ -102,7 +102,7 @@
             </div>
             
             <label style="font-weight: bold; font-size: 14px; color: #555;">รัศมีที่อนุญาต (เมตร):</label>
-            <input type="number" id="set-rad" class="input-box" style="margin-top: 5px; text-align: left; margin-bottom: 15px;">
+	    <input type="number" id="set-rad" class="input-box" style="margin-top: 5px; text-align: left;" oninput="updateRadiusRealtime(this.value)">
         </div>
         
         <div style="display: flex; gap: 10px; width: 100%; max-width: 320px;">
@@ -226,51 +226,65 @@
     }
 
     // ===================================
-    // ระบบตั้งค่าพิกัดแบบ Real-time
-    // ===================================
-    let pickerMapInstance = null;
-    let pickerMarker = null;
+   // --- ฟังก์ชันใหม่: อัปเดตพิกัดทันทีแบบ Real-time ---
+    function syncRealtime(lat, lng) {
+        OFFICE_LAT = lat;
+        OFFICE_LNG = lng;
+        
+        // 1. เปลี่ยนตัวเลขในช่องตั้งค่า
+        document.getElementById('set-lat').value = lat.toFixed(6);
+        document.getElementById('set-lng').value = lng.toFixed(6);
+        
+        // 2. ขยับวงกลมในหน้า "ตั้งค่า"
+        if(pickerCircle) pickerCircle.setLatLng([lat, lng]);
+        
+        // 3. ขยับวงกลมในหน้า "ตรวจสอบพิกัด" ทันที (ไม่ต้องรอเซฟ)
+        if(targetCircle) targetCircle.setLatLng([lat, lng]);
+        if(mapInstance) mapInstance.setView([lat, lng], mapInstance.getZoom());
+    }
 
-    function openSettings() {
-        const pin = prompt("กรุณาใส่รหัสผ่านแอดมิน เพื่อเข้าตั้งค่าพิกัด:");
-        if (pin === ADMIN_PIN) {
-            document.getElementById('main-app').classList.add('hidden');
-            document.getElementById('settings-page').classList.remove('hidden');
-            
-            // นำค่าปัจจุบันไปแสดงในช่องกรอก
-            document.getElementById('set-lat').value = OFFICE_LAT;
-            document.getElementById('set-lng').value = OFFICE_LNG;
-            document.getElementById('set-rad').value = ALLOWED_RADIUS;
+    // --- ฟังก์ชันใหม่: อัปเดตรัศมีแบบ Real-time ---
+    function updateRadiusRealtime(val) {
+        let r = parseInt(val) || 0;
+        ALLOWED_RADIUS = r;
+        if(pickerCircle) pickerCircle.setRadius(r);
+        if(targetCircle) targetCircle.setRadius(r);
+    }
 
-            // โหลดแผนที่ทันทีที่เปิดหน้าตั้งค่า
-            if (!pickerMapInstance) {
-                pickerMapInstance = L.map('picker-map').setView([OFFICE_LAT, OFFICE_LNG], 17);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMapInstance);
-                
-                pickerMarker = L.marker([OFFICE_LAT, OFFICE_LNG], { draggable: true }).addTo(pickerMapInstance);
-                
-                // เมื่อ "ลากหมุด" -> อัปเดตช่องตัวเลขทันที
-                pickerMarker.on('dragend', function (e) {
-                    document.getElementById('set-lat').value = pickerMarker.getLatLng().lat.toFixed(6);
-                    document.getElementById('set-lng').value = pickerMarker.getLatLng().lng.toFixed(6);
-                });
+    // --- อัปเดตฟังก์ชันเปิดแผนที่ตั้งค่า ---
+    function openMapPicker() {
+        document.getElementById('mapPickerModal').style.display = 'flex';
+        
+        let currentLat = parseFloat(document.getElementById('set-lat').value) || OFFICE_LAT;
+        let currentLng = parseFloat(document.getElementById('set-lng').value) || OFFICE_LNG;
+        let currentRad = parseInt(document.getElementById('set-rad').value) || ALLOWED_RADIUS;
+        
+        if (!pickerMapInstance) {
+            pickerMapInstance = L.map('picker-map').setView([currentLat, currentLng], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMapInstance);
+            
+            pickerCircle = L.circle([currentLat, currentLng], { color: '#17a2b8', fillColor: '#17a2b8', fillOpacity: 0.2, radius: currentRad }).addTo(pickerMapInstance);
+            pickerMarker = L.marker([currentLat, currentLng], { draggable: true }).addTo(pickerMapInstance);
+            
+            // เมื่อลากหมุด -> อัปเดตทุกอย่างทันที
+            pickerMarker.on('dragend', function (e) {
+                syncRealtime(pickerMarker.getLatLng().lat, pickerMarker.getLatLng().lng);
+            });
 
-                // เมื่อ "คลิกแผนที่" -> ย้ายหมุดและอัปเดตช่องตัวเลขทันที
-                pickerMapInstance.on('click', function(e) {
-                    pickerMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
-                    document.getElementById('set-lat').value = e.latlng.lat.toFixed(6);
-                    document.getElementById('set-lng').value = e.latlng.lng.toFixed(6);
-                });
-            } else {
-                pickerMapInstance.setView([OFFICE_LAT, OFFICE_LNG], 17);
-                pickerMarker.setLatLng([OFFICE_LAT, OFFICE_LNG]);
-            }
-            
-            setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
-            
-        } else if (pin !== null) {
-            alert("รหัสผ่านไม่ถูกต้อง ❌");
+            // เมื่อจิ้มแผนที่ -> อัปเดตทุกอย่างทันที
+            pickerMapInstance.on('click', function(e) {
+                pickerMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
+                syncRealtime(e.latlng.lat, e.latlng.lng);
+            });
+        } else {
+            pickerMapInstance.setView([currentLat, currentLng], 17);
+            pickerMarker.setLatLng([currentLat, currentLng]);
+            pickerCircle.setLatLng([currentLat, currentLng]);
+            pickerCircle.setRadius(currentRad);
         }
+        
+        setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
+    }
     }
 
     function closeSettings() {
