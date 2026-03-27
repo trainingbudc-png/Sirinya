@@ -170,10 +170,10 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec"; 
     const LIFF_ID = "2009502922-k1zdFCRh"; 
     
-    // ตั้งค่าพิกัดเริ่มต้น
-    let OFFICE_LAT = 16.80710722411132; 
-    let OFFICE_LNG = 100.26354157452536; 
-    let ALLOWED_RADIUS = 150; 
+    // 🛑 ยกเลิกการฟิกซ์ค่าในโค้ด ให้ระบบดึงจากฐานข้อมูลเท่านั้น
+    let OFFICE_LAT = null; 
+    let OFFICE_LNG = null; 
+    let ALLOWED_RADIUS = null; 
 
     // รหัสผ่านเข้าหน้าตั้งค่า
     const ADMIN_PIN = "1111"; 
@@ -184,7 +184,7 @@
     let watchId = null;
 
     // ===================================
-    // โหลดพิกัดล่าสุดจาก Sheet
+    // โหลดพิกัดล่าสุดจาก Sheet (บังคับดึงจาก DB 100%)
     // ===================================
    async function loadSettingsFromSheet() {
         try {
@@ -194,8 +194,10 @@
                 OFFICE_LAT = parseFloat(data.lat);
                 OFFICE_LNG = parseFloat(data.lng);
                 ALLOWED_RADIUS = parseInt(data.rad);
+            } else {
+                console.warn("⚠️ ฐานข้อมูลยังไม่มีพิกัด");
             }
-        } catch(e) { console.log("ใช้ค่าพิกัดเริ่มต้นในโค้ด"); }
+        } catch(e) { console.error("โหลดพิกัดล้มเหลว", e); }
     }
 
     function updateClock() {
@@ -215,6 +217,9 @@
 
     function startLocationWatch() {
         const iconEl = document.getElementById('location-status-icon');
+        // ถ้าฐานข้อมูลไม่มีพิกัด ให้โชว์ไอคอนเตือนและหยุดการทำงาน
+        if (!OFFICE_LAT) { iconEl.innerHTML = "⚠️"; return; } 
+
         if(watchId) navigator.geolocation.clearWatch(watchId);
         if (navigator.geolocation) {
             watchId = navigator.geolocation.watchPosition((position) => {
@@ -224,6 +229,7 @@
             }, () => { iconEl.innerHTML = "⚠️"; }, { enableHighAccuracy: true });
         } else { iconEl.innerHTML = "⚠️"; }
     }
+
     // ===================================
     // ระบบตั้งค่าพิกัดแบบ Real-time
     // ===================================
@@ -236,33 +242,34 @@
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('settings-page').classList.remove('hidden');
             
-            // นำค่าปัจจุบันไปแสดงในช่องกรอก
-            document.getElementById('set-lat').value = OFFICE_LAT;
-            document.getElementById('set-lng').value = OFFICE_LNG;
-            document.getElementById('set-rad').value = ALLOWED_RADIUS;
+            // นำค่าปัจจุบันจาก DB ไปแสดง (ถ้ายังไม่มีจะเป็นช่องว่าง)
+            document.getElementById('set-lat').value = OFFICE_LAT || "";
+            document.getElementById('set-lng').value = OFFICE_LNG || "";
+            document.getElementById('set-rad').value = ALLOWED_RADIUS || 150;
 
-            // โหลดแผนที่ทันทีที่เปิดหน้าตั้งค่า
+            // ถ้าไม่มีพิกัดใน DB ให้แผนที่ไปเริ่มที่กรุงเทพชั่วคราว เพื่อไม่ให้แผนที่ค้าง
+            let startLat = OFFICE_LAT || 13.7563;
+            let startLng = OFFICE_LNG || 100.5018;
+
             if (!pickerMapInstance) {
-                pickerMapInstance = L.map('picker-map').setView([OFFICE_LAT, OFFICE_LNG], 17);
+                pickerMapInstance = L.map('picker-map').setView([startLat, startLng], 17);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMapInstance);
                 
-                pickerMarker = L.marker([OFFICE_LAT, OFFICE_LNG], { draggable: true }).addTo(pickerMapInstance);
+                pickerMarker = L.marker([startLat, startLng], { draggable: true }).addTo(pickerMapInstance);
                 
-                // เมื่อ "ลากหมุด" -> อัปเดตช่องตัวเลขทันที
                 pickerMarker.on('dragend', function (e) {
                     document.getElementById('set-lat').value = pickerMarker.getLatLng().lat.toFixed(6);
                     document.getElementById('set-lng').value = pickerMarker.getLatLng().lng.toFixed(6);
                 });
 
-                // เมื่อ "คลิกแผนที่" -> ย้ายหมุดและอัปเดตช่องตัวเลขทันที
                 pickerMapInstance.on('click', function(e) {
                     pickerMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
                     document.getElementById('set-lat').value = e.latlng.lat.toFixed(6);
                     document.getElementById('set-lng').value = e.latlng.lng.toFixed(6);
                 });
             } else {
-                pickerMapInstance.setView([OFFICE_LAT, OFFICE_LNG], 17);
-                pickerMarker.setLatLng([OFFICE_LAT, OFFICE_LNG]);
+                pickerMapInstance.setView([startLat, startLng], 17);
+                pickerMarker.setLatLng([startLat, startLng]);
             }
             
             setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
@@ -277,7 +284,6 @@
         document.getElementById('main-app').classList.remove('hidden');
     }
 
-    // ฟังก์ชันสำหรับปุ่ม ดึงตำแหน่งปัจจุบัน
     function getCurrentLocationForPicker() {
         if (navigator.geolocation) {
             const btn = document.getElementById('btn-get-current');
@@ -288,11 +294,9 @@
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 
-                // อัปเดตตัวเลขในช่องกรอก
                 document.getElementById('set-lat').value = lat.toFixed(6);
                 document.getElementById('set-lng').value = lng.toFixed(6);
                 
-                // ย้ายแผนที่และหมุด
                 pickerMapInstance.setView([lat, lng], 18);
                 pickerMarker.setLatLng([lat, lng]);
                 
@@ -313,11 +317,11 @@
         
         if(!newLat || !newLng || !newRad) return alert("กรุณากรอกข้อมูลให้ครบครับ");
         
-        showLoader("กำลังบันทึกพิกัด...", 60, "💾");
+        showLoader("กำลังบันทึกพิกัดลงฐานข้อมูล...", 60, "💾");
         try {
             const response = await fetch(API_URL, {
                 method: 'POST', redirect: 'follow',
-                body: JSON.stringify({ action: 'saveSettings', lat: newLat, lng: newLng, rad: newRad, name: registeredName }) // แนบชื่อคนตั้งค่าไปให้ sheet
+                body: JSON.stringify({ action: 'saveSettings', lat: newLat, lng: newLng, rad: newRad, name: registeredName })
             });
             const resText = await response.text();
             if(resText.includes("Success")) {
@@ -325,24 +329,26 @@
                 OFFICE_LNG = newLng;
                 ALLOWED_RADIUS = newRad;
                 
-                // รีเซ็ตแผนที่หลักเพื่อให้ตอนกดดูแผนที่มันใช้พิกัดใหม่
                 if(mapInstance) { mapInstance.remove(); mapInstance = null; }
                 if(historyMapInstance) { historyMapInstance.remove(); historyMapInstance = null; }
                 startLocationWatch(); 
 
                 hideLoader();
-                alert("บันทึกพิกัดใหม่สำเร็จ! ✅");
+                alert("บันทึกพิกัดลงฐานข้อมูลสำเร็จ! ✅");
                 closeSettings();
             }
-        } catch(e) { alert("ล้มเหลวในการเชื่อมต่อ"); hideLoader(); }
+        } catch(e) { alert("ล้มเหลวในการเชื่อมต่อฐานข้อมูล"); hideLoader(); }
     }
 
     // ===================================
     // แผนที่หลัก / ประวัติ / ระบบอื่นๆ
     // ===================================
-   let mapInstance, userMarker, targetCircle, historyMapInstance;
+   let mapInstance, userMarker, targetCircle, historyMapInstance, officeMarker;
 
     function goToMap() {
+        // บังคับเช็คว่ามีพิกัดในฐานข้อมูลหรือไม่
+        if (!OFFICE_LAT) return alert("⚠️ ไม่สามารถเปิดแผนที่ได้! กรุณาให้ผู้ดูแลระบบตั้งค่าจุดสแกนในฐานข้อมูลก่อนครับ");
+
         document.getElementById("mapModal").style.display = "flex";
         const statusText = document.getElementById("mapStatus");
         statusText.innerHTML = "กำลังค้นหาตำแหน่งของคุณ... ⏳";
@@ -350,17 +356,27 @@
         if (!mapInstance) {
             mapInstance = L.map('map').setView([OFFICE_LAT, OFFICE_LNG], 16);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapInstance);
+            
             targetCircle = L.circle([OFFICE_LAT, OFFICE_LNG], { color: '#00B900', fillColor: '#00B900', fillOpacity: 0.2, radius: ALLOWED_RADIUS }).addTo(mapInstance);
+            officeMarker = L.marker([OFFICE_LAT, OFFICE_LNG]).addTo(mapInstance).bindPopup("🏢 จุดสแกน (จากฐานข้อมูล)").openPopup();
+        } else {
+            targetCircle.setLatLng([OFFICE_LAT, OFFICE_LNG]);
+            targetCircle.setRadius(ALLOWED_RADIUS);
+            if(officeMarker) officeMarker.setLatLng([OFFICE_LAT, OFFICE_LNG]);
         }
         setTimeout(() => { mapInstance.invalidateSize(); }, 200);
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((position) => {
                 const userLat = position.coords.latitude; const userLng = position.coords.longitude;
-                mapInstance.setView([userLat, userLng], 17);
-                if (userMarker) userMarker.setLatLng([userLat, userLng]);
-                else userMarker = L.marker([userLat, userLng]).addTo(mapInstance).bindPopup("คุณอยู่ที่นี่").openPopup();
                 
+                if (userMarker) userMarker.setLatLng([userLat, userLng]);
+                else userMarker = L.marker([userLat, userLng]).addTo(mapInstance).bindPopup("📍 ตำแหน่งของคุณ").openPopup();
+                
+                // สั่งให้แผนที่ซูมครอบคลุมทั้ง 2 จุด (ออฟฟิศ และ ตัวเรา)
+                const group = new L.featureGroup([officeMarker, userMarker]);
+                mapInstance.fitBounds(group.getBounds(), { padding: [30, 30] });
+
                 const distance = calculateDistance(userLat, userLng, OFFICE_LAT, OFFICE_LNG);
                 if (distance <= ALLOWED_RADIUS) { statusText.innerHTML = `✅ อยู่ในพื้นที่ (${Math.round(distance)} ม.)`; statusText.style.color = "#00B900"; } 
                 else { statusText.innerHTML = `❌ อยู่นอกพื้นที่ (${Math.round(distance)} ม.)`; statusText.style.color = "#dc3545"; }
@@ -371,6 +387,8 @@
     function closeMapOutside(event) { if (event.target === document.getElementById("mapModal")) closeMap(); }
 
     function showAllHistoryMap() {
+        if (!OFFICE_LAT) return alert("⚠️ กรุณาให้ผู้ดูแลระบบตั้งค่าจุดสแกนในฐานข้อมูลก่อนครับ");
+
         document.getElementById("historyMapModal").style.display = "flex";
         if (!historyMapInstance) {
             historyMapInstance = L.map('history-map').setView([OFFICE_LAT, OFFICE_LNG], 15);
@@ -422,7 +440,6 @@
 
     async function initLiff() {
         showLoader("กำลังโหลดระบบ...", 20, "⚙️");
-        // ผมเอาเครื่องหมาย // ออกแล้วเพื่อให้มันดึงค่าพิกัดจาก Google Sheet มาใช้นะครับ
         await loadSettingsFromSheet(); 
         try {
             await liff.init({ liffId: LIFF_ID });
@@ -456,6 +473,9 @@
     function startVideo() { navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(s => { document.getElementById('video').srcObject = s; }).catch(e => {}); }
 
     async function processAttendance(type) {
+        // บังคับเช็คก่อนลงเวลาว่าฐานข้อมูลมีค่าหรือยัง
+        if (!OFFICE_LAT) return alert("⚠️ ไม่สามารถลงเวลาได้! ระบบไม่พบพิกัดจุดสแกนในฐานข้อมูล กรุณาแจ้งผู้ดูแลระบบให้ตั้งค่าจุดสแกนก่อนครับ");
+
         showLoader("ตรวจสอบพิกัด...", 20, "📍");
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
