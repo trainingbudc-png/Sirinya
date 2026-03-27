@@ -78,8 +78,7 @@
                 <th>วัน</th>
                 <th>ชื่อ-นามสกุล</th>
                 <th>เวลาเข้างาน</th>
-                <th>สาย (นาที)</th>
-                <th>เวลาออกงาน</th>
+                <th>สาย</th> <th>เวลาออกงาน</th>
                 <th>อยู่ต่อ/ออกก่อน</th>
                 <th>หมายเหตุ</th>
                 <th>ดูข้อมูล</th>
@@ -256,9 +255,19 @@
                 if (inMins > baseInMins) {
                     // กรณีมาสาย
                     let diffLate = inMins - baseInMins;
+                    
+                    // 🌟 แปลงนาทีเป็น ชม. นาที ให้เหมือนตอนออกก่อน
+                    let lateHours = Math.floor(diffLate / 60);
+                    let lateMins = diffLate % 60;
+                    let lateText = "";
+                    
+                    if (lateHours > 0) lateText += lateHours + " ชม. ";
+                    if (lateMins > 0 || lateHours === 0) lateText += lateMins + " นาที";
+                    
                     timeInHtml = `<span class="late">${cleanTimeIn}</span>`;
-                    lateMinutesText = `<span class="late">${diffLate}</span>`;
-                    // 🌟 ใส่คลาส remark-bold เข้าไปเพื่อบังคับให้ตัวหนาเฉพาะจุดนี้
+                    lateMinutesText = `<span class="late">${lateText.trim()}</span>`;
+                    
+                    // ใส่คลาส remark-bold เข้าไปเพื่อบังคับให้ตัวหนาเฉพาะจุดนี้
                     remark = `<span class="late remark-bold">สาย</span>`;
                 } else {
                     // กรณีมาปกติ
@@ -275,18 +284,27 @@
                 if (outMins > baseOutMins) {
                     // กรณีอยู่ต่อ (หลัง 16:30) เป็นสีเขียว (+) และไม่ใช่ตัวหนา
                     let diffOver = outMins - baseOutMins;
-                    overMinutesText = `<span class="overtime">+${diffOver} นาที</span>`; 
+                    
+                    // แปลงนาทีอยู่ต่อเป็น ชม. นาที ด้วยก็ทำได้ แต่ถ้าเอาตามเดิมคือโชว์เป็นนาทีไปก่อน
+                    // ถ้าอยากให้เป็น ชม. นาที ด้วย สามารถแก้ตรงนี้ได้เช่นกันครับ
+                    let overHours = Math.floor(diffOver / 60);
+                    let overMins = diffOver % 60;
+                    let overText = "";
+                    if (overHours > 0) overText += overHours + " ชม. ";
+                    if (overMins > 0 || overHours === 0) overText += overMins + " นาที";
+                    
+                    overMinutesText = `<span class="overtime">+${overText.trim()}</span>`; 
                     
                 } else if (outMins < baseOutMins) {
                     // กรณีออกก่อนเวลา (ก่อน 16:30)
                     let diffEarly = baseOutMins - outMins;
                     
-                    // แปลงนาทีเป็น ชั่วโมง นาที
+                    // แปลงนาทีเป็น ชม. นาที
                     let earlyHours = Math.floor(diffEarly / 60);
                     let earlyMins = diffEarly % 60;
                     let earlyText = "";
                     
-                    if (earlyHours > 0) earlyText += earlyHours + " ชั่วโมง ";
+                    if (earlyHours > 0) earlyText += earlyHours + " ชม. ";
                     if (earlyMins > 0 || earlyHours === 0) earlyText += earlyMins + " นาที";
                     
                     // ใส่ - ไว้ข้างหน้า แล้วตามด้วยเวลาที่แปลงแล้ว
