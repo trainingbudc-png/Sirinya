@@ -24,13 +24,10 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
         
-        /* แก้ไขสี แต่เอาตัวหนาออกให้เป็นตัวปกติ */
-        .late { color: red; } 
-        .overtime { color: #00B900; }
-        .early { color: #ff8c00; }
-        
-        /* สร้างคลาสใหม่สำหรับหมายเหตุให้เป็นตัวหนาเท่านั้น */
-        .remark-bold { font-weight: bold; }
+        /* แก้รหัสสี overtime ให้เป็นสีเขียว (#00B900) */
+        .late { color: red; font-weight: bold; } 
+        .overtime { color: #00B900; font-weight: bold; } 
+        .early { color: #ff8c00; font-weight: bold; } 
         
         .btn-view { background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
         .btn-view:hover { background: #138496; }
@@ -215,6 +212,7 @@
         renderTable(filteredData);
     }
 
+    // ฟังก์ชันช่วยแปลงเวลาเป็นนาที เพื่อให้คำนวณง่ายขึ้น
     function timeToMinutes(timeStr) {
         if (!timeStr || timeStr === "") return 0;
         let parts = timeStr.split(":");
@@ -236,54 +234,63 @@
             const d = parseDateTH(item.rawDate);
             if(d) { dayName = dayNames[d.getDay()]; }
 
-            // 🌟 ลบขีด "-" ออกให้หมด เปลี่ยนเป็นช่องว่าง ""
-            let cleanTimeIn = (item.timeIn === "-") ? "" : item.timeIn;
-            let cleanTimeOut = (item.timeOut === "-") ? "" : item.timeOut;
-            let cleanDate = (item.date === "-") ? "" : item.date;
-            let cleanName = (item.name === "-") ? "" : item.name;
-
-            let timeInHtml = cleanTimeIn;
+            let timeInHtml = item.timeIn;
             let remark = "";
             let lateMinutesText = "";
             let overMinutesText = "";
 
             // 1. คำนวณเวลาเข้างาน (08:30)
-            if (cleanTimeIn !== "") {
-                let inMins = timeToMinutes(cleanTimeIn);
+            if (item.timeIn && item.timeIn !== "") {
+                let inMins = timeToMinutes(item.timeIn);
                 let baseInMins = (8 * 60) + 30; // 08:30 คิดเป็น 510 นาที
 
                 if (inMins > baseInMins) {
+                    // กรณีมาสาย
                     let diffLate = inMins - baseInMins;
-                    timeInHtml = `<span class="late">${cleanTimeIn}</span>`;
+                    timeInHtml = `<span class="late">${item.timeIn}</span>`;
                     lateMinutesText = `<span class="late">${diffLate}</span>`;
-                    // หมายเหตุให้เป็นตัวหนา
-                    remark = `<span class="late remark-bold">สาย</span>`;
+                    remark = `<span class="late">สาย</span>`;
                 } else {
-                    timeInHtml = `<span>${cleanTimeIn}</span>`;
-                    // ถ้าไม่สายปล่อยว่างไว้เลย ตารางจะได้สะอาด
-                    remark = ``;
+                    // กรณีมาปกติ
+                    timeInHtml = `<span>${item.timeIn}</span>`;
+                    remark = `<span>ไม่สาย</span>`;
                 }
             }
 
             // 2. คำนวณเวลาออกงาน (16:30)
-            if (cleanTimeOut !== "") {
-                let outMins = timeToMinutes(cleanTimeOut);
+            if (item.timeOut && item.timeOut !== "") {
+                let outMins = timeToMinutes(item.timeOut);
                 let baseOutMins = (16 * 60) + 30; // 16:30 คิดเป็น 990 นาที
 
                 if (outMins > baseOutMins) {
+                    // กรณีอยู่ต่อ (หลัง 16:30) เป็นสีเขียว (+)
                     let diffOver = outMins - baseOutMins;
-                    overMinutesText = `<span class="overtime">+${diffOver}</span>`; 
+                    overMinutesText = `<span class="overtime">+${diffOver} นาที</span>`; 
                     
                 } else if (outMins < baseOutMins) {
+                    // กรณีออกก่อนเวลา (ก่อน 16:30)
                     let diffEarly = baseOutMins - outMins;
-                    overMinutesText = `<span class="early">ออกก่อน ${diffEarly} นาที</span>`;
                     
-                    let earlyRemark = `<span class="early remark-bold">ออกก่อนเวลา</span>`;
+                    // แปลงนาทีเป็น ชั่วโมง นาที
+                    let earlyHours = Math.floor(diffEarly / 60);
+                    let earlyMins = diffEarly % 60;
+                    let earlyText = "";
+                    
+                    if (earlyHours > 0) earlyText += earlyHours + " ชั่วโมง ";
+                    if (earlyMins > 0 || earlyHours === 0) earlyText += earlyMins + " นาที";
+                    
+                    // ใส่ - ไว้ข้างหน้า แล้วตามด้วยเวลาที่แปลงแล้ว
+                    overMinutesText = `<span class="early">-${earlyText.trim()}</span>`;
+                    
+                    // อัปเดต remark ให้รู้ว่าออกก่อนเวลาด้วย
                     if (remark !== "") {
-                         remark += `, ${earlyRemark}`;
+                         remark += `, <span class="early">ออกก่อนเวลา</span>`;
                     } else {
-                         remark = earlyRemark;
+                         remark = `<span class="early">ออกก่อนเวลา</span>`;
                     }
+                } else {
+                    // กรณีออกพอดีเวลาเป๊ะ (16:30)
+                    overMinutesText = ``;
                 }
             }
 
@@ -293,12 +300,12 @@
             }
 
             tr.innerHTML = `
-                <td>${cleanDate}</td>
+                <td>${item.date}</td>
                 <td>${dayName}</td>
-                <td>${cleanName}</td>
+                <td>${item.name}</td>
                 <td>${timeInHtml}</td>
                 <td>${lateMinutesText}</td>
-                <td>${cleanTimeOut}</td>
+                <td>${item.timeOut}</td>
                 <td>${overMinutesText}</td>
                 <td>${remark}</td>
                 <td>${btnHtml}</td>
