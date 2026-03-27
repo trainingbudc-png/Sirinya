@@ -160,7 +160,7 @@
     }
 
     function parseDateTH(dateStr) {
-        if (!dateStr || dateStr === "-") return null;
+        if (!dateStr || dateStr === "") return null;
         let cleanDate = dateStr.replace(/-/g, '/').split(' ')[0]; 
         let parts = cleanDate.split('/');
         
@@ -213,7 +213,7 @@
 
     // ฟังก์ชันช่วยแปลงเวลาเป็นนาที เพื่อให้คำนวณง่ายขึ้น
     function timeToMinutes(timeStr) {
-        if (!timeStr || timeStr === "-") return 0;
+        if (!timeStr || timeStr === "") return 0;
         let parts = timeStr.split(":");
         return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
@@ -229,17 +229,17 @@
 
         dataArray.forEach(item => {
             let tr = document.createElement('tr');
-            let dayName = "-";
+            let dayName = "";
             const d = parseDateTH(item.rawDate);
             if(d) { dayName = dayNames[d.getDay()]; }
 
             let timeInHtml = item.timeIn;
-            let remark = "-";
-            let lateMinutesText = "-";
-            let overMinutesText = "-";
+            let remark = "";
+            let lateMinutesText = "";
+            let overMinutesText = "";
 
             // 1. คำนวณเวลาเข้างาน (08:30)
-            if (item.timeIn && item.timeIn !== "-") {
+            if (item.timeIn && item.timeIn !== "") {
                 let inMins = timeToMinutes(item.timeIn);
                 let baseInMins = (8 * 60) + 30; // 08:30 คิดเป็น 510 นาที
 
@@ -257,7 +257,7 @@
             }
 
             // 2. คำนวณเวลาออกงาน (16:30)
-            if (item.timeOut && item.timeOut !== "-") {
+            if (item.timeOut && item.timeOut !== "") {
                 let outMins = timeToMinutes(item.timeOut);
                 let baseOutMins = (16 * 60) + 30; // 16:30 คิดเป็น 990 นาที
 
@@ -272,14 +272,14 @@
                     overMinutesText = `<span class="early">ออกก่อน ${diffEarly} นาที</span>`;
                     
                     // อัปเดต remark ให้รู้ว่าออกก่อนเวลาด้วย
-                    if (remark !== "-") {
+                    if (remark !== "") {
                          remark += `, <span class="early">ออกก่อนเวลา</span>`;
                     } else {
                          remark = `<span class="early">ออกก่อนเวลา</span>`;
                     }
                 } else {
                     // กรณีออกพอดีเวลาเป๊ะ (16:30)
-                    overMinutesText = `-`;
+                    overMinutesText = ``;
                 }
             }
 
