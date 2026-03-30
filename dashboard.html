@@ -18,10 +18,9 @@
         button.btn-search:hover { background: #009900; }
         button.btn-clear { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
 
-        /* --- กล่องสำหรับล็อคตารางให้เลื่อนได้และหัวติดหนึบ --- */
         .table-wrapper {
-            max-height: 65vh; /* ความสูงของตาราง (ประมาณ 65% ของหน้าจอ) */
-            overflow-y: auto; /* ให้มีแถบเลื่อนขึ้นลงได้ */
+            max-height: 65vh; 
+            overflow-y: auto; 
             border: 1px solid #ddd;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -31,14 +30,13 @@
         th, td { padding: 12px; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: center; }
         th:last-child, td:last-child { border-right: none; }
         
-        /* --- ตั้งค่าหัวตารางให้ติดหนึบ --- */
         th { 
             background: #00B900; 
             color: white; 
             position: sticky; 
-            top: 0; /* ล็อคติดขอบบน */
+            top: 0; 
             z-index: 10; 
-            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* เพิ่มเงาด้านล่างให้ดูมีมิติ */
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); 
         }
         
         tr:nth-child(even) { background-color: #f9f9f9; }
@@ -61,24 +59,28 @@
 
         .loader { text-align: center; padding: 20px; font-size: 18px; color: #666; display: none; }
 
-        .date-cell { position: relative; }
-        .badge-count {
-            position: absolute; top: 3px; left: 3px;
+        /* --- CSS สำหรับปุ่มตัวเลขและการกดกางตาราง --- */
+        .badge-inline {
             background-color: #007bff; color: white;
             font-size: 11px; font-weight: bold;
-            padding: 2px 6px; border-radius: 10px; line-height: 1;
+            padding: 3px 7px; border-radius: 10px; margin-right: 5px;
+            display: inline-block;
         }
-        .summary-row { cursor: pointer; background-color: #fcfcfc; transition: 0.2s; }
-        .summary-row:hover { background-color: #e2e6ea !important; }
-        .detail-row { display: none; background-color: #f8f9fa !important; font-size: 14px; }
-        .detail-row td { border-top: 1px dashed #ccc; color: #555; }
-        .toggle-icon { margin-left: 5px; font-size: 12px; color: #888; font-weight: normal; }
+        .clickable-cell { 
+            cursor: pointer; 
+            transition: 0.2s; 
+            font-weight: 500;
+        }
+        .clickable-cell:hover { 
+            background-color: #e2e6ea !important; 
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1); 
+        }
+        .detail-row { display: none; background-color: #fdfdfd !important; font-size: 14px; }
+        .detail-row td { color: #555; }
+        .toggle-icon { margin-left: 5px; font-size: 11px; color: #666; }
         
-        .toggle-text-link {
-            color: #007bff; font-size: 14px; font-weight: bold; 
-            text-decoration: underline; cursor: pointer;
-        }
-        .toggle-text-link:hover { color: #0056b3; }
+        .bg-in-detail { background-color: #f4fbfa !important; }
+        .bg-out-detail { background-color: #fff9f2 !important; }
     </style>
 </head>
 <body>
@@ -296,6 +298,17 @@
         return `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
     }
 
+    // ฟังก์ชันกางข้อมูลเฉพาะ "เข้า" หรือ "ออก"
+    function toggleDetails(type, groupId) {
+        const rows = document.querySelectorAll(`.detail-${type}-${groupId}`);
+        const icon = document.getElementById(`icon-${type}-${groupId}`);
+        if (rows.length === 0) return;
+        
+        const isHidden = (rows[0].style.display === 'none' || rows[0].style.display === '');
+        rows.forEach(row => { row.style.display = isHidden ? 'table-row' : 'none'; });
+        if (icon) { icon.innerHTML = isHidden ? '▲' : '▼'; }
+    }
+
     function renderTable(dataArray) {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
@@ -320,7 +333,6 @@
             groupId++; 
             let currentGroupId = groupId; 
             const groupItems = groups[key];
-            const count = groupItems.length;
             const firstItem = groupItems[0]; 
             
             let dayName = "";
@@ -330,67 +342,86 @@
             let cleanDate = (!firstItem.date || firstItem.date === "-") ? "" : firstItem.date;
             let cleanName = (!firstItem.name || firstItem.name === "-") ? "" : firstItem.name;
 
+            // แยกประวัติการเข้าและออก
+            const itemsIn = groupItems.filter(item => item.timeIn && item.timeIn !== "-");
+            const itemsOut = groupItems.filter(item => item.timeOut && item.timeOut !== "-");
+
             let firstTimeIn = "";
             let lastTimeOut = "";
-            groupItems.forEach(item => {
-                let tIn = (!item.timeIn || item.timeIn === "-") ? "" : item.timeIn;
-                let tOut = (!item.timeOut || item.timeOut === "-") ? "" : item.timeOut;
-                
-                if (tIn !== "") { if (firstTimeIn === "" || tIn < firstTimeIn) firstTimeIn = tIn; }
-                if (tOut !== "") { if (lastTimeOut === "" || tOut > lastTimeOut) lastTimeOut = tOut; }
-            });
+            itemsIn.forEach(item => { if (firstTimeIn === "" || item.timeIn < firstTimeIn) firstTimeIn = item.timeIn; });
+            itemsOut.forEach(item => { if (lastTimeOut === "" || item.timeOut > lastTimeOut) lastTimeOut = item.timeOut; });
 
             let sumResult = calcTimeLogic(firstTimeIn, lastTimeOut);
-            let summaryTr = document.createElement('tr');
             
-            let badgeHtml = count > 1 ? `<span class="badge-count">${count}</span>` : '';
-            let toggleIconHtml = count > 1 ? `<span id="icon-group-${currentGroupId}" class="toggle-icon">▼</span>` : '';
-            let btnSummaryHtml = count > 1 ? `<span class="toggle-text-link">กดดูรายละเอียด</span>` : createBtnHtml(firstItem);
+            // --- จัดการช่องเวลาเข้างาน ---
+            let inCellHtml = sumResult.timeInHtml;
+            let inClass = "";
+            let inClick = "";
+            if (itemsIn.length > 1) {
+                inClass = "clickable-cell";
+                inClick = `onclick="toggleDetails('in', ${currentGroupId})"`;
+                inCellHtml = `<span class="badge-inline">${itemsIn.length}</span> ${inCellHtml} <span id="icon-in-${currentGroupId}" class="toggle-icon">▼</span>`;
+            }
 
+            // --- จัดการช่องเวลาออกงาน ---
+            let outCellHtml = lastTimeOut;
+            let outClass = "";
+            let outClick = "";
+            if (itemsOut.length > 1) {
+                outClass = "clickable-cell";
+                outClick = `onclick="toggleDetails('out', ${currentGroupId})"`;
+                outCellHtml = `<span class="badge-inline">${itemsOut.length}</span> ${lastTimeOut} <span id="icon-out-${currentGroupId}" class="toggle-icon">▼</span>`;
+            }
+
+            // --- สร้างตารางแถวหลัก ---
+            let summaryTr = document.createElement('tr');
             summaryTr.innerHTML = `
-                <td class="date-cell">${badgeHtml} ${cleanDate}</td>
+                <td>${cleanDate}</td>
                 <td>${dayName}</td>
-                <td style="text-align: left;">${cleanName} ${toggleIconHtml}</td>
-                <td>${sumResult.timeInHtml}</td>
+                <td style="text-align: left;">${cleanName}</td>
+                <td class="${inClass}" ${inClick}>${inCellHtml}</td>
                 <td>${sumResult.lateMinutesText}</td>
-                <td>${lastTimeOut}</td>
+                <td class="${outClass}" ${outClick}>${outCellHtml}</td>
                 <td>${sumResult.overMinutesText}</td>
                 <td>${sumResult.remark}</td>
-                <td>${btnSummaryHtml}</td>
+                <td>${createBtnHtml(firstItem)}</td>
             `;
+            tbody.appendChild(summaryTr);
 
-            if (count > 1) {
-                summaryTr.className = 'summary-row';
-                summaryTr.addEventListener('click', function() {
-                    const rows = document.querySelectorAll('.detail-group-' + currentGroupId);
-                    const icon = document.getElementById('icon-group-' + currentGroupId);
-                    if (rows.length === 0) return;
-                    const isHidden = (rows[0].style.display === 'none' || rows[0].style.display === '');
-                    rows.forEach(row => { row.style.display = isHidden ? 'table-row' : 'none'; });
-                    if (icon) { icon.innerHTML = isHidden ? '▲' : '▼'; }
+            // --- สร้างตารางแถวย่อย: เฉพาะเวลาเข้างาน ---
+            if (itemsIn.length > 1) {
+                itemsIn.forEach((item, index) => {
+                    let detResult = calcTimeLogic(item.timeIn, "");
+                    let detailTr = document.createElement('tr');
+                    detailTr.className = `detail-row detail-in-${currentGroupId}`;
+                    detailTr.innerHTML = `
+                        <td></td>
+                        <td></td>
+                        <td style="text-align: right; color:#888; font-size:13px; border-top:1px dashed #ccc;">↳ เข้างาน ครั้งที่ ${index + 1}</td>
+                        <td class="bg-in-detail" style="border-top:1px dashed #ccc;">${detResult.timeInHtml}</td>
+                        <td class="bg-in-detail" style="border-top:1px dashed #ccc;">${detResult.lateMinutesText}</td>
+                        <td colspan="3" style="color:#ccc; border-top:1px dashed #ccc;">-</td>
+                        <td style="border-top:1px dashed #ccc;">${createBtnHtml(item)}</td>
+                    `;
+                    tbody.appendChild(detailTr);
                 });
             }
 
-            tbody.appendChild(summaryTr);
-
-            if (count > 1) {
-                groupItems.forEach((item, index) => {
-                    let detTimeIn = (!item.timeIn || item.timeIn === "-") ? "" : item.timeIn;
-                    let detTimeOut = (!item.timeOut || item.timeOut === "-") ? "" : item.timeOut;
-                    let detResult = calcTimeLogic(detTimeIn, detTimeOut);
-
+            // --- สร้างตารางแถวย่อย: เฉพาะเวลาออกงาน ---
+            if (itemsOut.length > 1) {
+                itemsOut.forEach((item, index) => {
+                    let detResult = calcTimeLogic("", item.timeOut);
                     let detailTr = document.createElement('tr');
-                    detailTr.className = `detail-row detail-group-${currentGroupId}`;
+                    detailTr.className = `detail-row detail-out-${currentGroupId}`;
                     detailTr.innerHTML = `
-                        <td style="text-align: right; color:#888; font-size:13px;">↳ ครั้งที่ ${index + 1}</td>
-                        <td style="color:#888;">${dayName}</td>
-                        <td style="text-align: left; color:#888;">${cleanName}</td>
-                        <td>${detResult.timeInHtml}</td>
-                        <td>${detResult.lateMinutesText}</td>
-                        <td>${detTimeOut}</td>
-                        <td>${detResult.overMinutesText}</td>
-                        <td>${detResult.remark}</td>
-                        <td>${createBtnHtml(item)}</td>
+                        <td></td>
+                        <td></td>
+                        <td style="text-align: right; color:#888; font-size:13px; border-top:1px dashed #ccc;">↳ ออกงาน ครั้งที่ ${index + 1}</td>
+                        <td colspan="2" style="color:#ccc; border-top:1px dashed #ccc;">-</td>
+                        <td class="bg-out-detail" style="border-top:1px dashed #ccc;">${item.timeOut}</td>
+                        <td class="bg-out-detail" style="border-top:1px dashed #ccc;">${detResult.overMinutesText}</td>
+                        <td class="bg-out-detail" style="border-top:1px dashed #ccc;">${detResult.remark}</td>
+                        <td style="border-top:1px dashed #ccc;">${createBtnHtml(item)}</td>
                     `;
                     tbody.appendChild(detailTr);
                 });
