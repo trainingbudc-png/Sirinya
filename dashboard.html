@@ -298,26 +298,6 @@
         return `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
     }
 
-    // --- ฟังก์ชันเปิดปิดตารางย่อย (แก้บั๊กการกางตารางแล้ว) ---
-    function toggleGroup(groupId) {
-        const rows = document.querySelectorAll('.detail-group-' + groupId);
-        const icon = document.getElementById('icon-group-' + groupId);
-        
-        if (rows.length === 0) return;
-        
-        // เช็คสถานะจากบรรทัดแรกของกลุ่มนั้นๆ
-        const currentState = rows[0].style.display;
-        const isHidden = (currentState === 'none' || currentState === '');
-
-        rows.forEach(row => {
-            row.style.display = isHidden ? 'table-row' : 'none';
-        });
-        
-        if (icon) {
-            icon.innerHTML = isHidden ? '▲' : '▼';
-        }
-    }
-
     function renderTable(dataArray) {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
@@ -342,7 +322,7 @@
         // 2. วาดตาราง
         for (const key in groups) {
             groupId++; 
-            let currentGroupId = groupId; // Fix Closure Bug
+            let currentGroupId = groupId; // Fix Scope
 
             const groupItems = groups[key];
             const count = groupItems.length;
@@ -373,19 +353,9 @@
 
             let summaryTr = document.createElement('tr');
             
-            // ใช้ setAttribute เพื่อป้องกัน Bug เรื่องการจำค่า Loop
-            if (count > 1) {
-                summaryTr.className = 'summary-row';
-                summaryTr.setAttribute('onclick', `toggleGroup(${currentGroupId})`);
-            }
-
             let badgeHtml = count > 1 ? `<span class="badge-count">${count}</span>` : '';
             let toggleIconHtml = count > 1 ? `<span id="icon-group-${currentGroupId}" class="toggle-icon">▼</span>` : '';
-            
-            // ทำเป็นลิงก์ให้ชัดเจนว่ากดได้
-            let btnSummaryHtml = count > 1 
-                ? `<span class="toggle-text-link">กดดูรายละเอียด</span>` 
-                : createBtnHtml(firstItem);
+            let btnSummaryHtml = count > 1 ? `<span class="toggle-text-link">กดดูรายละเอียด</span>` : createBtnHtml(firstItem);
 
             summaryTr.innerHTML = `
                 <td class="date-cell">${badgeHtml} ${cleanDate}</td>
@@ -398,6 +368,28 @@
                 <td>${sumResult.remark}</td>
                 <td>${btnSummaryHtml}</td>
             `;
+
+            // เพิ่ม Event Listener ตรงๆ เพื่อให้มั่นใจว่าคลิกติดชัวร์ 100%
+            if (count > 1) {
+                summaryTr.className = 'summary-row';
+                summaryTr.addEventListener('click', function() {
+                    const rows = document.querySelectorAll('.detail-group-' + currentGroupId);
+                    const icon = document.getElementById('icon-group-' + currentGroupId);
+                    
+                    if (rows.length === 0) return;
+                    
+                    const isHidden = (rows[0].style.display === 'none' || rows[0].style.display === '');
+                    
+                    rows.forEach(row => {
+                        row.style.display = isHidden ? 'table-row' : 'none';
+                    });
+                    
+                    if (icon) {
+                        icon.innerHTML = isHidden ? '▲' : '▼';
+                    }
+                });
+            }
+
             tbody.appendChild(summaryTr);
 
             if (count > 1) {
