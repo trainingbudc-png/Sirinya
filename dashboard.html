@@ -24,7 +24,7 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
         
-        /* แก้ไขสี โดยเอาตัวหนาออก */
+        /* แก้ไขสี */
         .late { color: red; } 
         .overtime { color: #00B900; } 
         .early { color: #ff8c00; } 
@@ -43,6 +43,20 @@
         .no-image-text { color: #888; font-style: italic; margin-bottom: 15px; display: none; }
 
         .loader { text-align: center; padding: 20px; font-size: 18px; color: #666; display: none; }
+
+        /* --- CSS สำหรับตารางย่อ/ขยาย --- */
+        .date-cell { position: relative; }
+        .badge-count {
+            position: absolute; top: 3px; left: 3px;
+            background-color: #007bff; color: white;
+            font-size: 11px; font-weight: bold;
+            padding: 2px 6px; border-radius: 10px; line-height: 1;
+        }
+        .summary-row { cursor: pointer; background-color: #fcfcfc; transition: 0.2s; }
+        .summary-row:hover { background-color: #e2e6ea !important; }
+        .detail-row { display: none; background-color: #f8f9fa !important; font-size: 14px; }
+        .detail-row td { border-top: 1px dashed #ccc; color: #555; }
+        .toggle-icon { margin-left: 5px; font-size: 12px; color: #888; }
     </style>
 </head>
 <body>
@@ -78,7 +92,8 @@
                 <th>วัน</th>
                 <th>ชื่อ-นามสกุล</th>
                 <th>เวลาเข้างาน</th>
-                <th>สาย</th> <th>เวลาออกงาน</th>
+                <th>สาย</th> 
+                <th>เวลาออกงาน</th>
                 <th>อยู่ต่อ/ออกก่อน</th>
                 <th>หมายเหตุ</th>
                 <th>ดูข้อมูล</th>
@@ -214,13 +229,93 @@
         renderTable(filteredData);
     }
 
-    // ฟังก์ชันช่วยแปลงเวลาเป็นนาที เพื่อให้คำนวณง่ายขึ้น
     function timeToMinutes(timeStr) {
         if (!timeStr || timeStr === "") return 0;
         let parts = timeStr.split(":");
         return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
 
+    // --- ฟังก์ชันคำนวณเวลา ---
+    function calcTimeLogic(cleanTimeIn, cleanTimeOut) {
+        let timeInHtml = cleanTimeIn;
+        let remark = "";
+        let lateMinutesText = "";
+        let overMinutesText = "";
+
+        if (cleanTimeIn !== "") {
+            let inMins = timeToMinutes(cleanTimeIn);
+            let baseInMins = (8 * 60) + 30; // 08:30
+            if (inMins > baseInMins) {
+                let diffLate = inMins - baseInMins;
+                let lateHours = Math.floor(diffLate / 60);
+                let lateMins = diffLate % 60;
+                let lateText = "";
+                if (lateHours > 0) lateText += lateHours + " ชม. ";
+                if (lateMins > 0 || lateHours === 0) lateText += lateMins + " นาที";
+                
+                timeInHtml = `<span class="late">${cleanTimeIn}</span>`;
+                lateMinutesText = `<span class="late">${lateText.trim()}</span>`;
+                remark = `<span class="late remark-bold">สาย</span>`;
+            } else {
+                timeInHtml = `<span>${cleanTimeIn}</span>`;
+            }
+        }
+
+        if (cleanTimeOut !== "") {
+            let outMins = timeToMinutes(cleanTimeOut);
+            let baseOutMins = (16 * 60) + 30; // 16:30
+            if (outMins > baseOutMins) {
+                let diffOver = outMins - baseOutMins;
+                let overHours = Math.floor(diffOver / 60);
+                let overMins = diffOver % 60;
+                let overText = "";
+                if (overHours > 0) overText += overHours + " ชม. ";
+                if (overMins > 0 || overHours === 0) overText += overMins + " นาที";
+                overMinutesText = `<span class="overtime">+${overText.trim()}</span>`; 
+            } else if (outMins < baseOutMins) {
+                let diffEarly = baseOutMins - outMins;
+                let earlyHours = Math.floor(diffEarly / 60);
+                let earlyMins = diffEarly % 60;
+                let earlyText = "";
+                if (earlyHours > 0) earlyText += earlyHours + " ชม. ";
+                if (earlyMins > 0 || earlyHours === 0) earlyText += earlyMins + " นาที";
+                overMinutesText = `<span class="early">-${earlyText.trim()}</span>`;
+                let earlyRemark = `<span class="early remark-bold">ออกก่อนเวลา</span>`;
+                remark = remark !== "" ? `${remark}, ${earlyRemark}` : earlyRemark;
+            }
+        }
+        return { timeInHtml, lateMinutesText, overMinutesText, remark };
+    }
+
+    // --- ฟังก์ชันสร้างปุ่ม ---
+    function createBtnHtml(item) {
+        if (!item.image && (!item.location || item.location === "ไม่ระบุ" || item.location === "")) {
+            return `<span style="color:#aaa;">ไม่มีข้อมูล</span>`;
+        }
+        return `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
+    }
+
+    // --- ฟังก์ชันเปิดปิดตารางย่อย ---
+    window.toggleGroup = function(groupId) {
+        const rows = document.querySelectorAll('.detail-group-' + groupId);
+        const icon = document.getElementById('icon-group-' + groupId);
+        let isHidden = true;
+        
+        rows.forEach(row => {
+            if (row.style.display === 'none' || row.style.display === '') {
+                row.style.display = 'table-row';
+                isHidden = false;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        if (icon) {
+            icon.innerHTML = isHidden ? '▼' : '▲';
+        }
+    };
+
+    // --- ฟังก์ชัน Render แบบใหม่ (จัดกลุ่มข้อมูล) ---
     function renderTable(dataArray) {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
@@ -230,117 +325,95 @@
             return;
         }
 
+        // จัดกลุ่มข้อมูล
+        const groups = {};
         dataArray.forEach(item => {
-            let tr = document.createElement('tr');
-            let dayName = "";
-            const d = parseDateTH(item.rawDate);
-            if(d) { dayName = dayNames[d.getDay()]; }
-
-            // 🌟 ดักจับและลบขีด "-" ออกให้กลายเป็นช่องว่าง
-            let cleanTimeIn = (!item.timeIn || item.timeIn === "-") ? "" : item.timeIn;
-            let cleanTimeOut = (!item.timeOut || item.timeOut === "-") ? "" : item.timeOut;
             let cleanDate = (!item.date || item.date === "-") ? "" : item.date;
             let cleanName = (!item.name || item.name === "-") ? "" : item.name;
-
-            let timeInHtml = cleanTimeIn;
-            let remark = "";
-            let lateMinutesText = "";
-            let overMinutesText = "";
-
-            // 1. คำนวณเวลาเข้างาน (08:30)
-            if (cleanTimeIn !== "") {
-                let inMins = timeToMinutes(cleanTimeIn);
-                let baseInMins = (8 * 60) + 30; // 08:30 คิดเป็น 510 นาที
-
-                if (inMins > baseInMins) {
-                    // กรณีมาสาย
-                    let diffLate = inMins - baseInMins;
-                    
-                    // 🌟 แปลงนาทีเป็น ชม. นาที ให้เหมือนตอนออกก่อน
-                    let lateHours = Math.floor(diffLate / 60);
-                    let lateMins = diffLate % 60;
-                    let lateText = "";
-                    
-                    if (lateHours > 0) lateText += lateHours + " ชม. ";
-                    if (lateMins > 0 || lateHours === 0) lateText += lateMins + " นาที";
-                    
-                    timeInHtml = `<span class="late">${cleanTimeIn}</span>`;
-                    lateMinutesText = `<span class="late">${lateText.trim()}</span>`;
-                    
-                    // ใส่คลาส remark-bold เข้าไปเพื่อบังคับให้ตัวหนาเฉพาะจุดนี้
-                    remark = `<span class="late remark-bold">สาย</span>`;
-                } else {
-                    // กรณีมาปกติ
-                    timeInHtml = `<span>${cleanTimeIn}</span>`;
-                    remark = ``;
-                }
-            }
-
-            // 2. คำนวณเวลาออกงาน (16:30)
-            if (cleanTimeOut !== "") {
-                let outMins = timeToMinutes(cleanTimeOut);
-                let baseOutMins = (16 * 60) + 30; // 16:30 คิดเป็น 990 นาที
-
-                if (outMins > baseOutMins) {
-                    // กรณีอยู่ต่อ (หลัง 16:30) เป็นสีเขียว (+) และไม่ใช่ตัวหนา
-                    let diffOver = outMins - baseOutMins;
-                    
-                    // แปลงนาทีอยู่ต่อเป็น ชม. นาที ด้วยก็ทำได้ แต่ถ้าเอาตามเดิมคือโชว์เป็นนาทีไปก่อน
-                    // ถ้าอยากให้เป็น ชม. นาที ด้วย สามารถแก้ตรงนี้ได้เช่นกันครับ
-                    let overHours = Math.floor(diffOver / 60);
-                    let overMins = diffOver % 60;
-                    let overText = "";
-                    if (overHours > 0) overText += overHours + " ชม. ";
-                    if (overMins > 0 || overHours === 0) overText += overMins + " นาที";
-                    
-                    overMinutesText = `<span class="overtime">+${overText.trim()}</span>`; 
-                    
-                } else if (outMins < baseOutMins) {
-                    // กรณีออกก่อนเวลา (ก่อน 16:30)
-                    let diffEarly = baseOutMins - outMins;
-                    
-                    // แปลงนาทีเป็น ชม. นาที
-                    let earlyHours = Math.floor(diffEarly / 60);
-                    let earlyMins = diffEarly % 60;
-                    let earlyText = "";
-                    
-                    if (earlyHours > 0) earlyText += earlyHours + " ชม. ";
-                    if (earlyMins > 0 || earlyHours === 0) earlyText += earlyMins + " นาที";
-                    
-                    // ใส่ - ไว้ข้างหน้า แล้วตามด้วยเวลาที่แปลงแล้ว
-                    overMinutesText = `<span class="early">-${earlyText.trim()}</span>`;
-                    
-                    // อัปเดต remark ให้รู้ว่าออกก่อนเวลาด้วย (เป็นตัวหนา)
-                    let earlyRemark = `<span class="early remark-bold">ออกก่อนเวลา</span>`;
-                    if (remark !== "") {
-                         remark += `, ${earlyRemark}`;
-                    } else {
-                         remark = earlyRemark;
-                    }
-                } else {
-                    // กรณีออกพอดีเวลาเป๊ะ (16:30)
-                    overMinutesText = ``;
-                }
-            }
-
-            let btnHtml = `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
-            if (!item.image && (!item.location || item.location === "ไม่ระบุ" || item.location === "")) {
-                btnHtml = `<span style="color:#aaa;">ไม่มีข้อมูล</span>`;
-            }
-
-            tr.innerHTML = `
-                <td>${cleanDate}</td>
-                <td>${dayName}</td>
-                <td>${cleanName}</td>
-                <td>${timeInHtml}</td>
-                <td>${lateMinutesText}</td>
-                <td>${cleanTimeOut}</td>
-                <td>${overMinutesText}</td>
-                <td>${remark}</td>
-                <td>${btnHtml}</td>
-            `;
-            tbody.appendChild(tr);
+            let key = cleanDate + "||" + cleanName;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
         });
+
+        let groupId = 0;
+
+        // วาดตาราง
+        for (const key in groups) {
+            groupId++;
+            const groupItems = groups[key];
+            const count = groupItems.length;
+            const firstItem = groupItems[0]; 
+            
+            let dayName = "";
+            const d = parseDateTH(firstItem.rawDate);
+            if(d) { dayName = dayNames[d.getDay()]; }
+            
+            let cleanDate = (!firstItem.date || firstItem.date === "-") ? "" : firstItem.date;
+            let cleanName = (!firstItem.name || firstItem.name === "-") ? "" : firstItem.name;
+
+            let firstTimeIn = "";
+            let lastTimeOut = "";
+            groupItems.forEach(item => {
+                let tIn = (!item.timeIn || item.timeIn === "-") ? "" : item.timeIn;
+                let tOut = (!item.timeOut || item.timeOut === "-") ? "" : item.timeOut;
+                
+                if (tIn !== "") {
+                    if (firstTimeIn === "" || tIn < firstTimeIn) firstTimeIn = tIn;
+                }
+                if (tOut !== "") {
+                    if (lastTimeOut === "" || tOut > lastTimeOut) lastTimeOut = tOut;
+                }
+            });
+
+            let sumResult = calcTimeLogic(firstTimeIn, lastTimeOut);
+
+            let summaryTr = document.createElement('tr');
+            if (count > 1) {
+                summaryTr.className = 'summary-row';
+                summaryTr.onclick = () => toggleGroup(groupId);
+            }
+
+            let badgeHtml = count > 1 ? `<span class="badge-count">${count}</span>` : '';
+            let toggleIconHtml = count > 1 ? `<span id="icon-group-${groupId}" class="toggle-icon">▼</span>` : '';
+            let btnSummaryHtml = count > 1 ? `<span style="color:#007bff; font-size: 13px; font-weight:bold;">กดดูรายละเอียด</span>` : createBtnHtml(firstItem);
+
+            summaryTr.innerHTML = `
+                <td class="date-cell">${badgeHtml} ${cleanDate}</td>
+                <td>${dayName}</td>
+                <td style="text-align: left;">${cleanName} ${toggleIconHtml}</td>
+                <td>${sumResult.timeInHtml}</td>
+                <td>${sumResult.lateMinutesText}</td>
+                <td>${lastTimeOut}</td>
+                <td>${sumResult.overMinutesText}</td>
+                <td>${sumResult.remark}</td>
+                <td>${btnSummaryHtml}</td>
+            `;
+            tbody.appendChild(summaryTr);
+
+            if (count > 1) {
+                groupItems.forEach((item, index) => {
+                    let detTimeIn = (!item.timeIn || item.timeIn === "-") ? "" : item.timeIn;
+                    let detTimeOut = (!item.timeOut || item.timeOut === "-") ? "" : item.timeOut;
+                    let detResult = calcTimeLogic(detTimeIn, detTimeOut);
+
+                    let detailTr = document.createElement('tr');
+                    detailTr.className = `detail-row detail-group-${groupId}`;
+                    
+                    detailTr.innerHTML = `
+                        <td style="text-align: right; color:#888; font-size:13px;">↳ ครั้งที่ ${index + 1}</td>
+                        <td style="color:#888;">${dayName}</td>
+                        <td style="text-align: left; color:#888;">${cleanName}</td>
+                        <td>${detResult.timeInHtml}</td>
+                        <td>${detResult.lateMinutesText}</td>
+                        <td>${detTimeOut}</td>
+                        <td>${detResult.overMinutesText}</td>
+                        <td>${detResult.remark}</td>
+                        <td>${createBtnHtml(item)}</td>
+                    `;
+                    tbody.appendChild(detailTr);
+                });
+            }
+        }
     }
 
     function getDirectImageUrl(url) {
