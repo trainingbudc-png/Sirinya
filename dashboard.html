@@ -18,28 +18,35 @@
         button.btn-search:hover { background: #009900; }
         button.btn-clear { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
-        th, td { padding: 12px; border: 1px solid #ddd; text-align: center; }
+        /* --- กล่องสำหรับล็อคตารางให้เลื่อนได้และหัวติดหนึบ --- */
+        .table-wrapper {
+            max-height: 65vh; /* ความสูงของตาราง (ประมาณ 65% ของหน้าจอ) */
+            overflow-y: auto; /* ให้มีแถบเลื่อนขึ้นลงได้ */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: center; }
+        th:last-child, td:last-child { border-right: none; }
         
-        /* --- เพิ่ม Sticky Header ตรงนี้ --- */
+        /* --- ตั้งค่าหัวตารางให้ติดหนึบ --- */
         th { 
             background: #00B900; 
             color: white; 
             position: sticky; 
-            top: 0; 
+            top: 0; /* ล็อคติดขอบบน */
             z-index: 10; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15); /* เพิ่มเงาให้หัวตารางลอยขึ้นมา */
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* เพิ่มเงาด้านล่างให้ดูมีมิติ */
         }
         
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
         
-        /* แก้ไขสี */
         .late { color: red; } 
         .overtime { color: #00B900; } 
         .early { color: #ff8c00; } 
-        
-        /* บังคับตัวหนาเฉพาะหมายเหตุ */
         .remark-bold { font-weight: bold; }
         
         .btn-view { background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
@@ -54,7 +61,6 @@
 
         .loader { text-align: center; padding: 20px; font-size: 18px; color: #666; display: none; }
 
-        /* --- CSS สำหรับตารางย่อ/ขยาย --- */
         .date-cell { position: relative; }
         .badge-count {
             position: absolute; top: 3px; left: 3px;
@@ -101,23 +107,25 @@
 
     <div id="loader" class="loader">⏳ กำลังโหลดข้อมูล...</div>
 
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>วันที่</th>
-                <th>วัน</th>
-                <th>ชื่อ-นามสกุล</th>
-                <th>เวลาเข้างาน</th>
-                <th>สาย</th> 
-                <th>เวลาออกงาน</th>
-                <th>อยู่ต่อ/ออกก่อน</th>
-                <th>หมายเหตุ</th>
-                <th>ดูข้อมูล</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-        </tbody>
-    </table>
+    <div class="table-wrapper">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>วันที่</th>
+                    <th>วัน</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>เวลาเข้างาน</th>
+                    <th>สาย</th> 
+                    <th>เวลาออกงาน</th>
+                    <th>อยู่ต่อ/ออกก่อน</th>
+                    <th>หมายเหตุ</th>
+                    <th>ดูข้อมูล</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="modal" id="infoModal">
@@ -134,7 +142,6 @@
 </div>
 
 <script>
-    // ⚠️ ลิงก์ API ของคุณ
     const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec";
     
     let allLogs = [];
@@ -171,7 +178,6 @@
 
     function populateNameDropdown(empArray) {
         if (!empArray || empArray.length === 0) return; 
-        
         const nameSelect = document.getElementById('nameFilter');
         const cleanNames = empArray.map(name => name ? String(name).trim() : "").filter(name => name !== "");
         const uniqueNames = [...new Set(cleanNames)].sort(); 
@@ -196,7 +202,6 @@
         if (!dateStr || dateStr === "") return null;
         let cleanDate = dateStr.replace(/-/g, '/').split(' ')[0]; 
         let parts = cleanDate.split('/');
-        
         if (parts.length === 3) {
             let year = parseInt(parts[2]);
             if (year > 2500) year -= 543; 
@@ -209,14 +214,10 @@
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const nameSearch = document.getElementById('nameFilter').value.trim();
-
         let filteredData = allLogs;
 
         if (nameSearch !== "") {
-            filteredData = filteredData.filter(item => {
-                const itemName = item.name ? String(item.name).trim() : "";
-                return itemName === nameSearch;
-            });
+            filteredData = filteredData.filter(item => item.name ? String(item.name).trim() === nameSearch : false);
         }
 
         if (startDate || endDate) {
@@ -224,20 +225,9 @@
                 const rowDate = parseDateTH(item.rawDate);
                 if (!rowDate) return false;
                 rowDate.setHours(0,0,0,0);
-
-                let isAfterStart = true;
-                let isBeforeEnd = true;
-
-                if (startDate) {
-                    const sDate = new Date(startDate);
-                    sDate.setHours(0,0,0,0);
-                    isAfterStart = rowDate >= sDate;
-                }
-                if (endDate) {
-                    const eDate = new Date(endDate);
-                    eDate.setHours(0,0,0,0);
-                    isBeforeEnd = rowDate <= eDate;
-                }
+                let isAfterStart = true, isBeforeEnd = true;
+                if (startDate) { const sDate = new Date(startDate); sDate.setHours(0,0,0,0); isAfterStart = rowDate >= sDate; }
+                if (endDate) { const eDate = new Date(endDate); eDate.setHours(0,0,0,0); isBeforeEnd = rowDate <= eDate; }
                 return isAfterStart && isBeforeEnd;
             });
         }
@@ -270,9 +260,7 @@
                 timeInHtml = `<span class="late">${cleanTimeIn}</span>`;
                 lateMinutesText = `<span class="late">${lateText.trim()}</span>`;
                 remark = `<span class="late remark-bold">สาย</span>`;
-            } else {
-                timeInHtml = `<span>${cleanTimeIn}</span>`;
-            }
+            } else { timeInHtml = `<span>${cleanTimeIn}</span>`; }
         }
 
         if (cleanTimeOut !== "") {
@@ -317,7 +305,6 @@
             return;
         }
 
-        // 1. จัดกลุ่มข้อมูล
         const groups = {};
         dataArray.forEach(item => {
             let cleanDate = (!item.date || item.date === "-") ? "" : item.date;
@@ -329,11 +316,9 @@
 
         let groupId = 0;
 
-        // 2. วาดตาราง
         for (const key in groups) {
             groupId++; 
             let currentGroupId = groupId; 
-
             const groupItems = groups[key];
             const count = groupItems.length;
             const firstItem = groupItems[0]; 
@@ -351,16 +336,11 @@
                 let tIn = (!item.timeIn || item.timeIn === "-") ? "" : item.timeIn;
                 let tOut = (!item.timeOut || item.timeOut === "-") ? "" : item.timeOut;
                 
-                if (tIn !== "") {
-                    if (firstTimeIn === "" || tIn < firstTimeIn) firstTimeIn = tIn;
-                }
-                if (tOut !== "") {
-                    if (lastTimeOut === "" || tOut > lastTimeOut) lastTimeOut = tOut;
-                }
+                if (tIn !== "") { if (firstTimeIn === "" || tIn < firstTimeIn) firstTimeIn = tIn; }
+                if (tOut !== "") { if (lastTimeOut === "" || tOut > lastTimeOut) lastTimeOut = tOut; }
             });
 
             let sumResult = calcTimeLogic(firstTimeIn, lastTimeOut);
-
             let summaryTr = document.createElement('tr');
             
             let badgeHtml = count > 1 ? `<span class="badge-count">${count}</span>` : '';
@@ -384,18 +364,10 @@
                 summaryTr.addEventListener('click', function() {
                     const rows = document.querySelectorAll('.detail-group-' + currentGroupId);
                     const icon = document.getElementById('icon-group-' + currentGroupId);
-                    
                     if (rows.length === 0) return;
-                    
                     const isHidden = (rows[0].style.display === 'none' || rows[0].style.display === '');
-                    
-                    rows.forEach(row => {
-                        row.style.display = isHidden ? 'table-row' : 'none';
-                    });
-                    
-                    if (icon) {
-                        icon.innerHTML = isHidden ? '▲' : '▼';
-                    }
+                    rows.forEach(row => { row.style.display = isHidden ? 'table-row' : 'none'; });
+                    if (icon) { icon.innerHTML = isHidden ? '▲' : '▼'; }
                 });
             }
 
@@ -409,7 +381,6 @@
 
                     let detailTr = document.createElement('tr');
                     detailTr.className = `detail-row detail-group-${currentGroupId}`;
-                    
                     detailTr.innerHTML = `
                         <td style="text-align: right; color:#888; font-size:13px;">↳ ครั้งที่ ${index + 1}</td>
                         <td style="color:#888;">${dayName}</td>
@@ -430,24 +401,15 @@
     function getDirectImageUrl(url) {
         if (!url || url === "undefined") return "";
         let fileId = "";
-        
-        if (url.includes("/file/d/")) {
-            fileId = url.split("/file/d/")[1].split("/")[0];
-        } 
-        else if (url.includes("id=")) {
-            fileId = url.split("id=")[1].split("&")[0];
-        }
-
-        if (fileId) {
-            return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w800";
-        }
+        if (url.includes("/file/d/")) { fileId = url.split("/file/d/")[1].split("/")[0]; } 
+        else if (url.includes("id=")) { fileId = url.split("id=")[1].split("&")[0]; }
+        if (fileId) { return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w800"; }
         return url; 
     }
 
     function openModal(imgUrl, mapUrl) {
         const imgElement = document.getElementById('modalImg');
         const noImageText = document.getElementById('noImageText');
-        
         const directImgUrl = getDirectImageUrl(imgUrl);
         
         if (directImgUrl && directImgUrl !== "") {
@@ -463,14 +425,10 @@
         const mapElement = document.getElementById('modalMap');
         mapElement.href = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? mapUrl : "#";
         mapElement.style.display = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? "inline-block" : "none";
-        
         document.getElementById('infoModal').style.display = "flex";
     }
 
-    function closeModal() {
-        document.getElementById('infoModal').style.display = "none";
-    }
-
+    function closeModal() { document.getElementById('infoModal').style.display = "none"; }
 </script>
 
 </body>
