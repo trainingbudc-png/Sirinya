@@ -1,248 +1,487 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สรุปคะแนนรวมทั้งหมด</title>
+    <title>Dashboard สรุปเวลาเข้า-ออกงาน</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Sarabun', sans-serif;
-            background: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-        }
+        body { font-family: 'Sarabun', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #00B900; margin-bottom: 20px; }
+        
+        .filter-box { display: flex; flex-wrap: wrap; gap: 15px; background: #e9ecef; padding: 15px; border-radius: 10px; margin-bottom: 20px; align-items: center; }
+        .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
+        label { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
+        input[type="date"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Sarabun', sans-serif; width: 100%; box-sizing: border-box; }
+        button.btn-search { background: #00B900; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
+        button.btn-search:hover { background: #009900; }
+        button.btn-clear { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; height: 42px; margin-top: auto; }
 
-        .container {
-            max-width: 1000px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        h2 {
-            color: #1a73e8;
-            border-bottom: 2px solid #1a73e8;
-            padding-bottom: 10px;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        th {
-            background: #1a73e8;
-            color: white;
-            padding: 12px;
-            text-align: left;
-        }
-
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        tr:hover {
-            background: #f8f9fa;
-        }
-
-        .badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .bg-info {
-            background: #e3f2fd;
-            color: #0d47a1;
-        }
-
-        input {
-            padding: 10px;
+        .table-wrapper {
+            max-height: 65vh; 
+            overflow-y: auto; 
             border: 1px solid #ddd;
-            border-radius: 5px;
-            flex: 1;
-            min-width: 250px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* ตกแต่งปุ่ม */
-        .btn {
-            padding: 10px 20px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            color: white;
-            transition: 0.2s;
+        table { width: 100%; border-collapse: collapse; font-size: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: center; }
+        th:last-child, td:last-child { border-right: none; }
+        
+        th { 
+            background: #00B900; 
+            color: white; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); 
         }
+        
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        .late { color: red; } 
+        .overtime { color: #00B900; } 
+        .early { color: #ff8c00; } 
+        .remark-bold { font-weight: bold; }
+        
+        .btn-view { background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
+        .btn-view:hover { background: #138496; }
 
-        .btn-refresh {
-            background: #34a853;
+        /* Modal โชว์รูปภาพ (z-index สูงสุด เพราะต้องซ้อนได้) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-content img { max-width: 100%; height: auto; border-radius: 10px; margin-bottom: 15px; }
+        .btn-close { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-family: 'Sarabun', sans-serif;}
+        .map-link { display: inline-block; background: #007bff; color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; margin-right: 10px; }
+        .no-image-text { color: #888; font-style: italic; margin-bottom: 15px; display: none; }
+
+        /* Modal โชว์ประวัติเวลา (z-index รองลงมา) */
+        .history-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center; }
+        .history-content { background: white; padding: 25px; border-radius: 10px; width: 95%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .history-content h3 { margin-top: 0; color: #333; border-bottom: 2px solid #00B900; padding-bottom: 10px; }
+        .history-table { width: 100%; margin-top: 15px; margin-bottom: 20px; border-collapse: collapse; }
+        .history-table th { background: #f1f1f1; color: #333; position: static; box-shadow: none; border: 1px solid #ddd; }
+        .history-table td { border: 1px solid #ddd; padding: 10px; }
+
+        .loader { text-align: center; padding: 20px; font-size: 18px; color: #666; display: none; }
+
+        .badge-inline {
+            background-color: #007bff; color: white;
+            font-size: 11px; font-weight: bold;
+            padding: 3px 7px; border-radius: 10px; margin-right: 5px;
+            display: inline-block;
         }
-
-        .btn-refresh:hover {
-            background: #2b8a44;
+        .clickable-cell { 
+            cursor: pointer; 
+            transition: 0.2s; 
+            font-weight: 500;
         }
-
-        .btn-print {
-            background: #d32f2f;
+        .clickable-cell:hover { 
+            background-color: #e2e6ea !important; 
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1); 
         }
-
-        .btn-print:hover {
-            background: #b71c1c;
-        }
-
-        /* การตั้งค่าเวลาสั่งพิมพ์เป็น PDF */
-        @media print {
-
-            .controls,
-            .back-link {
-                display: none !important;
-            }
-
-            /* ซ่อนปุ่มและช่องค้นหา */
-            body {
-                background: white;
-                padding: 0;
-            }
-
-            .container {
-                box-shadow: none;
-                max-width: 100%;
-                width: 100%;
-                padding: 0;
-                margin: 0;
-                border-radius: 0;
-            }
-
-            table {
-                font-size: 12px;
-            }
-
-            th {
-                background: #eee !important;
-                color: #000 !important;
-            }
-
-            /* เปลี่ยนสีหัวตารางให้ประหยัดหมึก/อ่านง่าย */
-        }
+        .toggle-icon { margin-left: 5px; font-size: 11px; color: #666; }
     </style>
 </head>
-
 <body>
 
-    <div class="container">
-        <div class="back-link" style="margin-bottom: 20px;">
-            <a href="Index.html" style="text-decoration: none; color: #1a73e8; font-weight: bold; font-size: 16px;">
-                ⬅️ กลับหน้าหลัก (กรอกคะแนน)
-            </a>
-        </div>
+<div class="container">
+    <h2>📊 Dashboard สรุปเวลาเข้า-ออกงาน</h2>
 
-        <h2>📊 รายการคะแนนที่บันทึกแล้วทั้งหมด</h2>
-
-        <div class="controls">
-            <input type="text" id="searchInput" onkeyup="filterTable()"
-                placeholder="🔍 ค้นหาด้วย ชื่อ, รหัสนิสิต หรือ รายวิชา...">
-            <button class="btn btn-refresh" onclick="loaddashboard()">🔄 รีเฟรชข้อมูล</button>
-            <button class="btn btn-print" onclick="window.print()">📕 พิมพ์เป็น PDF</button>
+    <div class="filter-box">
+        <div class="filter-item">
+            <label>ตั้งแต่วันที่:</label>
+            <input type="date" id="startDate">
         </div>
-
-        <div style="overflow-x: auto;">
-            <table id="summaryTable">
-                <thead>
-                    <tr>
-                        <th>วัน-เวลาที่บันทึก</th>
-                        <th>รายวิชา</th>
-                        <th>กลุ่ม</th>
-                        <th>รหัสนิสิต</th>
-                        <th>ชื่อ-สกุล</th>
-                        <th>อาจารย์ผู้ประเมิน</th>
-                    </tr>
-                </thead>
-                <tbody id="dashboardBody">
-                    <tr>
-                        <td colspan="6" style="text-align:center;">⏳ กำลังโหลดข้อมูล...</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="filter-item">
+            <label>ถึงวันที่:</label>
+            <input type="date" id="endDate">
         </div>
+        <div class="filter-item">
+            <label>เลือกพนักงาน:</label>
+            <select id="nameFilter">
+                <option value="">-- ดูทุกคน --</option>
+            </select>
+        </div>
+        <button class="btn-search" onclick="applyFilters()">🔍 ค้นหา</button>
+        <button class="btn-clear" onclick="clearFilters()">🔄 ล้างค่า</button>
     </div>
 
-    <script>
-        // 🚩 เปลี่ยน API_URL ให้เป็นของคุณเหมือนเดิม
-        const API_URL = "https://script.google.com/macros/s/AKfycbxH8kYNTl0b1amZeZ4S9qCKHIjcYxz-okb4wFyUCIzE8YM1qk0UIQXWFaXTXPl-WRrp/exec";
+    <div id="loader" class="loader">⏳ กำลังโหลดข้อมูล...</div>
 
-        async function loaddashboard() {
-            const tbody = document.getElementById('dashboardBody');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">⏳ กำลังดึงข้อมูลล่าสุด...</td></tr>';
+    <div class="table-wrapper">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>วันที่</th>
+                    <th>วัน</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>เวลาเข้างาน</th>
+                    <th>สาย</th> 
+                    <th>เวลาออกงาน</th>
+                    <th>อยู่ต่อ/ออกก่อน</th>
+                    <th>หมายเหตุ</th>
+                    <th>ดูข้อมูล</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
 
-            try {
-                const res = await fetch(`${API_URL}?action=getHistory`);
-                const data = await res.json();
+<div class="history-modal" id="historyModal">
+    <div class="history-content">
+        <h3 id="historyTitle">ประวัติการลงเวลา</h3>
+        <div id="historyBody"></div>
+        <div style="text-align: right;">
+            <button class="btn-close" onclick="closeHistoryModal()">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+</div>
 
-                if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">❌ ยังไม่มีข้อมูลคะแนนในระบบ</td></tr>';
-                    return;
-                }
+<div class="modal" id="infoModal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">ข้อมูลสแกน</h3>
+        <img id="modalImg" src="" alt="รูปภาพสแกน" style="display:none;">
+        <p id="noImageText" class="no-image-text">❌ ไม่มีการแนบรูปภาพ</p>
+        
+        <div>
+            <a id="modalMap" href="#" target="_blank" class="map-link">📍 ดูแผนที่ (GPS)</a>
+            <button class="btn-close" onclick="closeModal()">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+</div>
 
-                tbody.innerHTML = "";
-                data.forEach(item => {
-                    const tr = document.createElement('tr');
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzmWupyTuisestNMQXYY19GrwdDn_GOvuWiCP5-YQiozQIyVksARdf1Zj4U8ofM7EIv0Q/exec";
+    
+    let allLogs = [];
+    let groupDetailsStore = {}; // เก็บข้อมูลแต่ละกลุ่มไว้เปิด Pop-up
+    const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 
-                    // แก้ไขคีย์จาก "ชื่อ-นามสกุล" เป็น "ชื่อ-สกุล" ให้ตรงกับใน Google Sheets
-                    tr.innerHTML = `
-                    <td style="color:#666; font-size:12px;">${item["Timestamp"] || '-'}</td>
-                    <td><span class="badge bg-info">${item["รายวิชา"] || '-'}</span></td>
-                    <td>${item["กลุ่ม"] || '-'}</td>
-                    <td><b>${item["รหัสนิสิต"] || '-'}</b></td>
-                    <td>${item["ชื่อ-สกุล"] || '-'}</td>
-                    <td>${item["อาจารย์ผู้ประเมิน"] || '-'}</td>
-                `;
-                    tbody.appendChild(tr);
-                });
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">❌ ไม่สามารถโหลดข้อมูลได้</td></tr>';
+    window.onload = async function() {
+        document.getElementById('loader').style.display = 'block';
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: 'getAllData' })
+            });
+            const data = await response.json();
+            
+            if (Array.isArray(data)) {
+                allLogs = data; 
+                populateNameDropdown([]); 
+            } else {
+                allLogs = data.logs || []; 
+                const empList = data.employees || []; 
+                populateNameDropdown(empList);
             }
+            
+            renderTable(allLogs);
+
+        } catch(e) {
+            console.error("Fetch Error:", e);
+            alert("❌ เชื่อมต่อไม่สำเร็จ: โปรดตรวจสอบลิงก์ API_URL ว่าถูกต้องหรือไม่");
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+        }
+    };
+
+    function populateNameDropdown(empArray) {
+        if (!empArray || empArray.length === 0) return; 
+        const nameSelect = document.getElementById('nameFilter');
+        const cleanNames = empArray.map(name => name ? String(name).trim() : "").filter(name => name !== "");
+        const uniqueNames = [...new Set(cleanNames)].sort(); 
+
+        nameSelect.innerHTML = '<option value="">-- ดูทุกคน --</option>';
+        uniqueNames.forEach(name => {
+            let option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            nameSelect.appendChild(option);
+        });
+    }
+
+    function clearFilters() {
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('nameFilter').value = '';
+        renderTable(allLogs);
+    }
+
+    function parseDateTH(dateStr) {
+        if (!dateStr || dateStr === "") return null;
+        let cleanDate = dateStr.replace(/-/g, '/').split(' ')[0]; 
+        let parts = cleanDate.split('/');
+        if (parts.length === 3) {
+            let year = parseInt(parts[2]);
+            if (year > 2500) year -= 543; 
+            return new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
+        return null;
+    }
+
+    function applyFilters() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const nameSearch = document.getElementById('nameFilter').value.trim();
+        let filteredData = allLogs;
+
+        if (nameSearch !== "") {
+            filteredData = filteredData.filter(item => item.name ? String(item.name).trim() === nameSearch : false);
         }
 
-        // ฟังก์ชันสำหรับค้นหาข้อความในตาราง
-        function filterTable() {
-            const input = document.getElementById("searchInput");
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById("summaryTable");
-            const tr = table.getElementsByTagName("tr");
+        if (startDate || endDate) {
+            filteredData = filteredData.filter(item => {
+                const rowDate = parseDateTH(item.rawDate);
+                if (!rowDate) return false;
+                rowDate.setHours(0,0,0,0);
+                let isAfterStart = true, isBeforeEnd = true;
+                if (startDate) { const sDate = new Date(startDate); sDate.setHours(0,0,0,0); isAfterStart = rowDate >= sDate; }
+                if (endDate) { const eDate = new Date(endDate); eDate.setHours(0,0,0,0); isBeforeEnd = rowDate <= eDate; }
+                return isAfterStart && isBeforeEnd;
+            });
+        }
+        renderTable(filteredData);
+    }
 
-            for (let i = 1; i < tr.length; i++) {
-                let found = false;
-                const tds = tr[i].getElementsByTagName("td");
-                for (let j = 0; j < tds.length; j++) {
-                    if (tds[j].textContent.toUpperCase().indexOf(filter) > -1) {
-                        found = true;
-                        break;
-                    }
-                }
-                tr[i].style.display = found ? "" : "none";
-            }
+    function timeToMinutes(timeStr) {
+        if (!timeStr || timeStr === "") return 0;
+        let parts = timeStr.split(":");
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
+    function calcTimeLogic(cleanTimeIn, cleanTimeOut) {
+        let timeInHtml = cleanTimeIn;
+        let remark = "";
+        let lateMinutesText = "";
+        let overMinutesText = "";
+
+        if (cleanTimeIn !== "") {
+            let inMins = timeToMinutes(cleanTimeIn);
+            let baseInMins = (8 * 60) + 30; // 08:30
+            if (inMins > baseInMins) {
+                let diffLate = inMins - baseInMins;
+                let lateHours = Math.floor(diffLate / 60);
+                let lateMins = diffLate % 60;
+                let lateText = "";
+                if (lateHours > 0) lateText += lateHours + " ชม. ";
+                if (lateMins > 0 || lateHours === 0) lateText += lateMins + " นาที";
+                
+                timeInHtml = `<span class="late">${cleanTimeIn}</span>`;
+                lateMinutesText = `<span class="late">${lateText.trim()}</span>`;
+                remark = `<span class="late remark-bold">สาย</span>`;
+            } else { timeInHtml = `<span>${cleanTimeIn}</span>`; }
         }
 
-        // เรียกดึงข้อมูลเมื่อโหลดหน้าเว็บ
-        window.onload = loaddashboard;
-    </script>
+        if (cleanTimeOut !== "") {
+            let outMins = timeToMinutes(cleanTimeOut);
+            let baseOutMins = (16 * 60) + 30; // 16:30
+            if (outMins > baseOutMins) {
+                let diffOver = outMins - baseOutMins;
+                let overHours = Math.floor(diffOver / 60);
+                let overMins = diffOver % 60;
+                let overText = "";
+                if (overHours > 0) overText += overHours + " ชม. ";
+                if (overMins > 0 || overHours === 0) overText += overMins + " นาที";
+                overMinutesText = `<span class="overtime">+${overText.trim()}</span>`; 
+            } else if (outMins < baseOutMins) {
+                let diffEarly = baseOutMins - outMins;
+                let earlyHours = Math.floor(diffEarly / 60);
+                let earlyMins = diffEarly % 60;
+                let earlyText = "";
+                if (earlyHours > 0) earlyText += earlyHours + " ชม. ";
+                if (earlyMins > 0 || earlyHours === 0) earlyText += earlyMins + " นาที";
+                overMinutesText = `<span class="early">-${earlyText.trim()}</span>`;
+                let earlyRemark = `<span class="early remark-bold">ออกก่อนเวลา</span>`;
+                remark = remark !== "" ? `${remark}, ${earlyRemark}` : earlyRemark;
+            }
+        }
+        return { timeInHtml, lateMinutesText, overMinutesText, remark };
+    }
+
+    function createBtnHtml(item) {
+        if (!item.image && (!item.location || item.location === "ไม่ระบุ" || item.location === "")) {
+            return `<span style="color:#aaa;">ไม่มีข้อมูล</span>`;
+        }
+        return `<button class="btn-view" onclick="openModal('${item.image}', '${item.location}')">ดูข้อมูล</button>`;
+    }
+
+    // ฟังก์ชันเปิด Pop-up ประวัติเวลา
+    function openHistoryModal(type, groupId) {
+        const data = groupDetailsStore[groupId];
+        const items = type === 'in' ? data.in : data.out;
+        const titleText = type === 'in' ? 'เวลาเข้างาน' : 'เวลาออกงาน';
+        
+        document.getElementById('historyTitle').innerHTML = `ประวัติ${titleText} - ${data.name} (${data.date})`;
+        
+        let html = `
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>ครั้งที่</th>
+                        <th>เวลา</th>
+                        <th>สถานะ</th>
+                        <th>ข้อมูลสแกน</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        items.forEach((item, index) => {
+            let timeStr = type === 'in' ? item.timeIn : item.timeOut;
+            let detResult = type === 'in' ? calcTimeLogic(timeStr, "") : calcTimeLogic("", timeStr);
+            
+            let timeDisplay = type === 'in' ? detResult.timeInHtml : timeStr;
+            let statusDisplay = type === 'in' ? detResult.lateMinutesText : detResult.overMinutesText;
+            let remarkDisplay = detResult.remark;
+            
+            let fullStatus = statusDisplay !== "" ? `${statusDisplay} <br><small>${remarkDisplay}</small>` : "-";
+
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><b>${timeDisplay}</b></td>
+                    <td>${fullStatus}</td>
+                    <td>${createBtnHtml(item)}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        document.getElementById('historyBody').innerHTML = html;
+        document.getElementById('historyModal').style.display = "flex";
+    }
+
+    function closeHistoryModal() {
+        document.getElementById('historyModal').style.display = "none";
+    }
+
+    function renderTable(dataArray) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        groupDetailsStore = {}; // รีเซ็ตข้อมูล
+
+        if(!dataArray || dataArray.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="padding: 20px; color: #666;">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>';
+            return;
+        }
+
+        const groups = {};
+        dataArray.forEach(item => {
+            let cleanDate = (!item.date || item.date === "-") ? "" : item.date;
+            let cleanName = (!item.name || item.name === "-") ? "" : item.name;
+            let key = cleanDate + "||" + cleanName;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
+        });
+
+        let groupId = 0;
+
+        for (const key in groups) {
+            groupId++; 
+            let currentGroupId = groupId; 
+            const groupItems = groups[key];
+            const firstItem = groupItems[0]; 
+            
+            let dayName = "";
+            const d = parseDateTH(firstItem.rawDate);
+            if(d) { dayName = dayNames[d.getDay()]; }
+            
+            let cleanDate = (!firstItem.date || firstItem.date === "-") ? "" : firstItem.date;
+            let cleanName = (!firstItem.name || firstItem.name === "-") ? "" : firstItem.name;
+
+            const itemsIn = groupItems.filter(item => item.timeIn && item.timeIn !== "-");
+            const itemsOut = groupItems.filter(item => item.timeOut && item.timeOut !== "-");
+
+            // เก็บข้อมูลไว้ดึงตอนเปิด Modal
+            groupDetailsStore[currentGroupId] = {
+                name: cleanName,
+                date: cleanDate,
+                in: itemsIn,
+                out: itemsOut
+            };
+
+            let firstTimeIn = "";
+            let lastTimeOut = "";
+            itemsIn.forEach(item => { if (firstTimeIn === "" || item.timeIn < firstTimeIn) firstTimeIn = item.timeIn; });
+            itemsOut.forEach(item => { if (lastTimeOut === "" || item.timeOut > lastTimeOut) lastTimeOut = item.timeOut; });
+
+            let sumResult = calcTimeLogic(firstTimeIn, lastTimeOut);
+            
+            // เตรียมช่องเวลาเข้างาน
+            let inCellHtml = sumResult.timeInHtml;
+            let inClass = "";
+            let inClick = "";
+            if (itemsIn.length > 1) {
+                inClass = "clickable-cell";
+                inClick = `onclick="openHistoryModal('in', ${currentGroupId})"`;
+                inCellHtml = `<span class="badge-inline">${itemsIn.length}</span> ${inCellHtml} <span class="toggle-icon">🔍</span>`;
+            }
+
+            // เตรียมช่องเวลาออกงาน
+            let outCellHtml = lastTimeOut;
+            let outClass = "";
+            let outClick = "";
+            if (itemsOut.length > 1) {
+                outClass = "clickable-cell";
+                outClick = `onclick="openHistoryModal('out', ${currentGroupId})"`;
+                outCellHtml = `<span class="badge-inline">${itemsOut.length}</span> ${lastTimeOut} <span class="toggle-icon">🔍</span>`;
+            }
+
+            let summaryTr = document.createElement('tr');
+            summaryTr.innerHTML = `
+                <td>${cleanDate}</td>
+                <td>${dayName}</td>
+                <td style="text-align: left;">${cleanName}</td>
+                <td class="${inClass}" ${inClick}>${inCellHtml}</td>
+                <td>${sumResult.lateMinutesText}</td>
+                <td class="${outClass}" ${outClick}>${outCellHtml}</td>
+                <td>${sumResult.overMinutesText}</td>
+                <td>${sumResult.remark}</td>
+                <td>${createBtnHtml(firstItem)}</td>
+            `;
+            tbody.appendChild(summaryTr);
+        }
+    }
+
+    function getDirectImageUrl(url) {
+        if (!url || url === "undefined") return "";
+        let fileId = "";
+        if (url.includes("/file/d/")) { fileId = url.split("/file/d/")[1].split("/")[0]; } 
+        else if (url.includes("id=")) { fileId = url.split("id=")[1].split("&")[0]; }
+        if (fileId) { return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w800"; }
+        return url; 
+    }
+
+    function openModal(imgUrl, mapUrl) {
+        const imgElement = document.getElementById('modalImg');
+        const noImageText = document.getElementById('noImageText');
+        const directImgUrl = getDirectImageUrl(imgUrl);
+        
+        if (directImgUrl && directImgUrl !== "") {
+            imgElement.src = directImgUrl;
+            imgElement.style.display = "block";
+            if(noImageText) noImageText.style.display = "none"; 
+        } else {
+            imgElement.src = "";
+            imgElement.style.display = "none";
+            if(noImageText) noImageText.style.display = "block";
+        }
+
+        const mapElement = document.getElementById('modalMap');
+        mapElement.href = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? mapUrl : "#";
+        mapElement.style.display = mapUrl && mapUrl !== "ไม่ระบุ" && mapUrl !== "" ? "inline-block" : "none";
+        document.getElementById('infoModal').style.display = "flex";
+    }
+
+    function closeModal() { document.getElementById('infoModal').style.display = "none"; }
+</script>
 
 </body>
-
 </html>
